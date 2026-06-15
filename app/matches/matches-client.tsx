@@ -201,7 +201,7 @@ export function MatchesClientPage({ channels }: MatchesClientPageProps) {
 
   return (
     <DashboardLayout channels={channels}>
-      <div style={{ display: "grid", gridTemplateColumns: "350px 1fr", gap: "24px", height: "100%", minHeight: "0" }} className="matches-main-grid">
+      <div className="matches-main-grid">
         
         {/* Left Column: Matches list */}
         <section style={{ display: "flex", flexDirection: "column", gap: "20px", overflow: "hidden" }}>

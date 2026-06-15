@@ -69,7 +69,7 @@ export function EpgClientPage({ channels }: EpgClientPageProps) {
 
   return (
     <DashboardLayout channels={channels}>
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 350px", gap: "24px", height: "100%", minHeight: "0" }} className="epg-main-grid">
+      <div className="epg-main-grid">
         
         {/* Left Column: Interactive EPG Schedule Timeline */}
         <section style={{ display: "flex", flexDirection: "column", gap: "20px", overflow: "hidden" }}>

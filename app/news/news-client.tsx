@@ -91,7 +91,7 @@ export function NewsClientPage({ channels }: NewsClientPageProps) {
 
   return (
     <DashboardLayout channels={channels}>
-      <div style={{ display: "grid", gridTemplateColumns: "380px 1fr", gap: "24px", height: "100%", minHeight: "0" }} className="news-main-grid">
+      <div className="news-main-grid">
         
         {/* Left Column: News list panel */}
         <section style={{ display: "flex", flexDirection: "column", gap: "20px", overflow: "hidden" }}>

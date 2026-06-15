@@ -82,7 +82,7 @@ export function SettingsClientPage({ channels }: SettingsClientPageProps) {
 
   return (
     <DashboardLayout channels={channels}>
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "24px", height: "100%", overflowY: "auto" }} className="settings-main-grid">
+      <div className="settings-main-grid">
         
         {/* Left Column: Visual Tuner, Themes & Latency buffer */}
         <section style={{ display: "flex", flexDirection: "column", gap: "24px" }}>

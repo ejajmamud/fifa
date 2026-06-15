@@ -1931,3 +1931,81 @@ html, body {
   animation: pulse 1.5s infinite ease-in-out;
   box-shadow: 0 0 8px #ef4444;
 }
+
+/* Global Link Underlines Reset */
+a, .nav-item, .mobile-nav-btn {
+  text-decoration: none !important;
+}
+
+/* Kill Horizontal Scrollbar on Channels List */
+.channels-scrollable {
+  overflow-x: hidden !important;
+}
+.channel-list-card {
+  width: 100% !important;
+  max-width: 100% !important;
+  box-sizing: border-box !important;
+}
+
+/* Layout Grids Configuration */
+.epg-main-grid {
+  display: grid;
+  grid-template-columns: 1fr 350px;
+  gap: 24px;
+  height: 100%;
+  min-height: 0;
+  flex-grow: 1;
+}
+
+.matches-main-grid {
+  display: grid;
+  grid-template-columns: 350px 1fr;
+  gap: 24px;
+  height: 100%;
+  min-height: 0;
+  flex-grow: 1;
+}
+
+.news-main-grid {
+  display: grid;
+  grid-template-columns: 380px 1fr;
+  gap: 24px;
+  height: 100%;
+  min-height: 0;
+  flex-grow: 1;
+}
+
+.settings-main-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+  height: 100%;
+  overflow-y: auto;
+  flex-grow: 1;
+  padding-bottom: 30px;
+}
+
+/* Media Queries for Responsive Stacking (width <= 1024px) */
+@media (max-width: 1024px) {
+  .epg-main-grid,
+  .matches-main-grid,
+  .news-main-grid,
+  .settings-main-grid {
+    grid-template-columns: 1fr !important;
+    height: auto !important;
+    overflow-y: visible !important;
+  }
+  
+  .epg-details-sidebar,
+  .match-details-panel,
+  .news-article-view {
+    height: auto !important;
+    max-height: none !important;
+    margin-top: 20px;
+  }
+  
+  .settings-main-grid {
+    padding-bottom: 100px !important; /* spacing for mobile nav */
+  }
+}
+

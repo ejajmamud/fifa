@@ -104,6 +104,7 @@ export function TvExperience({ channels }: TvExperienceProps) {
   ]);
   const [chatInput, setChatInput] = useState("");
   const chatEndRef = useRef<HTMLDivElement | null>(null);
+  const chatContainerRef = useRef<HTMLDivElement | null>(null);
 
   // Active channel compute
   const activeChannel = useMemo(
@@ -271,9 +272,12 @@ export function TvExperience({ channels }: TvExperienceProps) {
     }
   }, []);
 
-  // Chat scroll
+  // Chat scroll container to bottom
   useEffect(() => {
-    chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    const container = chatContainerRef.current;
+    if (container) {
+      container.scrollTop = container.scrollHeight;
+    }
   }, [chatMessages]);
 
   // Simulated Chat commentary
@@ -1042,7 +1046,7 @@ export function TvExperience({ channels }: TvExperienceProps) {
 
           <div className="chat-section-header">VIP Broadcast Commentary</div>
           
-          <div className="chat-history-scroll">
+          <div ref={chatContainerRef} className="chat-history-scroll">
             {chatMessages.map((msg) => (
               <div key={msg.id} className={`chat-bubble ${msg.role}`}>
                 <div className="chat-bubble-user">
