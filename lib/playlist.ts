@@ -68,7 +68,7 @@ export function getLiveMatches(): Match[] {
       redCards: [0, 0],
       lineups: {
         home: ["Martinez", "Molina", "Romero", "Otamendi", "Tagliafico", "De Paul", "Fernandez", "Mac Allister", "Messi", "Alvarez", "Gonzalez"],
-        away: ["Maignan", "Kounde", "Upamecano", "Konate", "Hernandez", "Tchouameni", "Rabiot", "Dembele", "Griezmann", "Mbappe", "Giroud"]
+        away: ["Maignan", "Kounde", "Upamecano", "Saliba", "Hernandez", "Tchouameni", "Rabiot", "Dembele", "Griezmann", "Mbappe", "Giroud"]
       }
     },
     {
@@ -97,7 +97,7 @@ export function getLiveMatches(): Match[] {
       awayScore: 0,
       status: "FINISHED",
       time: "FT",
-      tournament: "UEFA Nations League",
+      tournament: "FIFA World Cup - Final",
       possession: [58, 42],
       shots: [17, 8],
       yellowCards: [1, 1],
@@ -115,7 +115,7 @@ export function getLiveMatches(): Match[] {
       awayScore: 0,
       status: "UPCOMING",
       time: "20:00",
-      tournament: "CONMEBOL Qualifiers",
+      tournament: "FIFA World Cup - Round of 16",
       possession: [50, 50],
       shots: [0, 0],
       yellowCards: [0, 0],
@@ -128,19 +128,19 @@ export function getLiveMatches(): Match[] {
     {
       id: "match-5",
       homeTeam: "Portugal",
-      awayTeam: "Italy",
+      awayTeam: "Morocco",
       homeScore: 1,
-      awayScore: 2,
+      awayScore: 0,
       status: "FINISHED",
       time: "FT",
-      tournament: "International Friendly",
+      tournament: "FIFA World Cup - Quarter Finals",
       possession: [52, 48],
       shots: [12, 14],
       yellowCards: [3, 2],
       redCards: [0, 0],
       lineups: {
         home: ["Costa", "Cancelo", "Dias", "Inacio", "Mendes", "Fernandes", "Palhinha", "Vitinha", "Silva", "Ronaldo", "Leao"],
-        away: ["Donnarumma", "Di Lorenzo", "Bastoni", "Calafiori", "Dimarco", "Barella", "Jorginho", "Frattesi", "Chiesa", "Scamacca", "Pellegrini"]
+        away: ["Bounou", "Hakimi", "Aguerd", "Saiss", "Mazraoui", "Amrabat", "Ounahi", "Amallah", "Ziyech", "En-Nesyri", "Boufal"]
       }
     }
   ];

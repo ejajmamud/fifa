@@ -3,31 +3,31 @@ import { NextResponse } from "next/server";
 export const dynamic = "force-dynamic";
 
 // High-fidelity active squad rosters
-const lineupsHome = [
-  "Courtois (GK)", "Carvajal", "Militao", "Rudiger", "Mendy",
-  "Valverde", "Tchouameni", "Bellingham", "Rodrygo", "Mbappe", "Vinicius Jr"
+const lineupsArgentina = [
+  "E. Martinez (GK)", "Molina", "Romero", "Otamendi", "Tagliafico",
+  "De Paul", "Fernandez", "Mac Allister", "Messi", "J. Alvarez", "N. Gonzalez"
 ];
-const lineupsAway = [
-  "Ederson (GK)", "Walker", "Dias", "Akanji", "Gvardiol",
-  "Rodri", "Kovacic", "De Bruyne", "Bernardo", "Foden", "Haaland"
-];
-
-const lineupsBayern = [
-  "Neuer (GK)", "Kimmich", "Upamecano", "Kim", "Davies",
-  "Laimer", "Goretzka", "Sane", "Musiala", "Gnabry", "Kane"
-];
-const lineupsArsenal = [
-  "Raya (GK)", "White", "Saliba", "Gabriel", "Timber",
-  "Partey", "Rice", "Odegaard", "Saka", "Martinelli", "Havertz"
+const lineupsFrance = [
+  "Maignan (GK)", "Kounde", "Upamecano", "Saliba", "T. Hernandez",
+  "Tchouameni", "Rabiot", "Dembele", "Griezmann", "Mbappe", "Thuram"
 ];
 
-const lineupsBarca = [
-  "Ter Stegen (GK)", "Kounde", "Araujo", "Cubarsi", "Balde",
-  "Pedri", "Gundogan", "De Jong", "Yamal", "Lewandowski", "Raphinha"
+const lineupsBrazil = [
+  "Alisson (GK)", "Danilo", "Marquinhos", "Gabriel Magalhaes", "Arana",
+  "Bruno Guimaraes", "Joao Gomes", "Lucas Paqueta", "Rodrygo", "Vinicius Jr", "Raphinha"
 ];
-const lineupsPsg = [
-  "Donnarumma (GK)", "Hakimi", "Marquinhos", "Pacho", "Mendes",
-  "Zaire-Emery", "Vitinha", "Ruiz", "Dembele", "Barcola", "Kolo Muani"
+const lineupsGermany = [
+  "Neuer (GK)", "Kimmich", "Tah", "Rudiger", "Mittelstadt",
+  "Andrich", "Kroos", "Musiala", "Gundogan", "Wirtz", "Havertz"
+];
+
+const lineupsSpain = [
+  "Raya (GK)", "Carvajal", "Le Normand", "Laporte", "Cucurella",
+  "Rodri", "Fabian Ruiz", "Lamine Yamal", "Dani Olmo", "Nico Williams", "Morata"
+];
+const lineupsCapeVerde = [
+  "Vozinha (GK)", "Pico Lopes", "Costa", "Tavares", "Cabral",
+  "Monteiro", "Santos", "Duarte", "Bebé", "Mendes", "Rodrigues"
 ];
 
 export async function GET() {
@@ -108,13 +108,17 @@ export async function GET() {
             lineups: {
               home: home.team?.shortDisplayName 
                 ? [home.team.shortDisplayName + " GK", "CB 1", "CB 2", "LB", "RB", "CM 1", "CM 2", "AM", "LW", "RW", "ST"]
-                : lineupsHome,
+                : lineupsArgentina,
               away: away.team?.shortDisplayName
                 ? [away.team.shortDisplayName + " GK", "CB 1", "CB 2", "LB", "RB", "CM 1", "CM 2", "AM", "LW", "RW", "ST"]
-                : lineupsAway
+                : lineupsFrance
             }
           };
-        });
+        }).filter((m: any) => 
+          m.tournament.toLowerCase().includes("world cup") || 
+          m.tournament.toLowerCase().includes("fifa") || 
+          m.tournament.toLowerCase().includes("wc")
+        );
       }
     } catch (apiError) {
       console.warn("ESPN Scoreboard fetch failed. Loading premium simulator...", apiError);
@@ -124,7 +128,7 @@ export async function GET() {
     if (matches.length === 0) {
       const timestamp = Date.now();
       
-      // Match 1: Real Madrid vs Man City (LIVE)
+      // Match 1: Argentina vs France (LIVE)
       // Cycle minute from 0 to 90 every 1.5 hours
       const cycleTime1 = (timestamp % 5400000) / 60000;
       const mins1 = Math.floor(cycleTime1);
@@ -138,24 +142,24 @@ export async function GET() {
       
       const match1 = {
         id: "sim-match-1",
-        homeTeam: "Real Madrid",
-        awayTeam: "Manchester City",
+        homeTeam: "Argentina",
+        awayTeam: "France",
         homeScore: homeScore1,
         awayScore: awayScore1,
         status: "LIVE" as const,
         time: `${mins1}'`,
-        tournament: "UEFA CHAMPIONS LEAGUE - SEMI FINALS",
-        possession: [46, 54] as [number, number],
-        shots: [12, 16] as [number, number],
-        yellowCards: [2, 1] as [number, number],
+        tournament: "FIFA WORLD CUP - SEMI FINALS",
+        possession: [56, 44] as [number, number],
+        shots: [14, 9] as [number, number],
+        yellowCards: [2, 3] as [number, number],
         redCards: [0, 0] as [number, number],
         lineups: {
-          home: lineupsHome,
-          away: lineupsAway
+          home: lineupsArgentina,
+          away: lineupsFrance
         }
       };
-
-      // Match 2: Bayern Munich vs Arsenal (LIVE - offset by 30 mins)
+ 
+      // Match 2: Brazil vs Germany (LIVE - offset by 30 mins)
       const cycleTime2 = ((timestamp + 1800000) % 5400000) / 60000;
       const mins2 = Math.floor(cycleTime2);
       
@@ -167,83 +171,83 @@ export async function GET() {
       
       const match2 = {
         id: "sim-match-2",
-        homeTeam: "Bayern Munich",
-        awayTeam: "Arsenal",
+        homeTeam: "Brazil",
+        awayTeam: "Germany",
         homeScore: homeScore2,
         awayScore: awayScore2,
         status: "LIVE" as const,
         time: `${mins2}'`,
-        tournament: "UEFA CHAMPIONS LEAGUE - QUARTER FINALS",
-        possession: [51, 49] as [number, number],
-        shots: [14, 11] as [number, number],
+        tournament: "FIFA WORLD CUP - GROUP STAGE",
+        possession: [62, 38] as [number, number],
+        shots: [11, 4] as [number, number],
         yellowCards: [1, 2] as [number, number],
         redCards: [0, 0] as [number, number],
         lineups: {
-          home: lineupsBayern,
-          away: lineupsArsenal
+          home: lineupsBrazil,
+          away: lineupsGermany
         }
       };
-
-      // Match 3: Barcelona vs Paris Saint-Germain (FINISHED)
+ 
+      // Match 3: Spain vs Cape Verde (FINISHED)
       const match3 = {
         id: "sim-match-3",
-        homeTeam: "Barcelona",
-        awayTeam: "Paris Saint-Germain",
-        homeScore: 3,
-        awayScore: 1,
+        homeTeam: "Spain",
+        awayTeam: "Cape Verde",
+        homeScore: 0,
+        awayScore: 0,
         status: "FINISHED" as const,
         time: "FT",
-        tournament: "UEFA CHAMPIONS LEAGUE",
-        possession: [53, 47] as [number, number],
-        shots: [16, 9] as [number, number],
-        yellowCards: [3, 2] as [number, number],
-        redCards: [1, 0] as [number, number],
+        tournament: "FIFA WORLD CUP - GROUP STAGE",
+        possession: [73, 27] as [number, number],
+        shots: [27, 2] as [number, number],
+        yellowCards: [1, 2] as [number, number],
+        redCards: [0, 0] as [number, number],
         lineups: {
-          home: lineupsBarca,
-          away: lineupsPsg
+          home: lineupsSpain,
+          away: lineupsCapeVerde
         }
       };
-
-      // Match 4: Chelsea vs Liverpool (UPCOMING - starts at 19:45 today)
+ 
+      // Match 4: England vs Italy (UPCOMING - starts at 19:45 today)
       const match4 = {
         id: "sim-match-4",
-        homeTeam: "Chelsea",
-        awayTeam: "Liverpool",
+        homeTeam: "England",
+        awayTeam: "Italy",
         homeScore: 0,
         awayScore: 0,
         status: "UPCOMING" as const,
         time: "19:45",
-        tournament: "ENGLISH PREMIER LEAGUE",
+        tournament: "FIFA WORLD CUP - GROUP STAGE",
         possession: [50, 50] as [number, number],
         shots: [0, 0] as [number, number],
         yellowCards: [0, 0] as [number, number],
         redCards: [0, 0] as [number, number],
         lineups: {
-          home: ["Sanchez (GK)", "James", "Disasi", "Colwill", "Cucurella", "Caicedo", "Fernandez", "Palmer", "Madueke", "Neto", "Jackson"],
-          away: ["Alisson (GK)", "Alexander-Arnold", "Konate", "Van Dijk", "Robertson", "Gravenberch", "Mac Allister", "Szoboszlai", "Salah", "Diaz", "Jota"]
+          home: ["Pickford (GK)", "Walker", "Stones", "Guehi", "Trippier", "Mainoo", "Rice", "Saka", "Bellingham", "Foden", "Kane"],
+          away: ["Donnarumma (GK)", "Di Lorenzo", "Bastoni", "Calafiori", "Dimarco", "Barella", "Jorginho", "Frattesi", "Chiesa", "Scamacca", "Pellegrini"]
         }
       };
-
-      // Match 5: AC Milan vs Inter Milan (FINISHED)
+ 
+      // Match 5: Portugal vs Morocco (FINISHED)
       const match5 = {
         id: "sim-match-5",
-        homeTeam: "AC Milan",
-        awayTeam: "Inter Milan",
-        homeScore: 0,
-        awayScore: 2,
+        homeTeam: "Portugal",
+        awayTeam: "Morocco",
+        homeScore: 1,
+        awayScore: 0,
         status: "FINISHED" as const,
         time: "FT",
-        tournament: "SERIE A - DERBY DELLA MADONNINA",
-        possession: [48, 52] as [number, number],
-        shots: [10, 15] as [number, number],
-        yellowCards: [4, 3] as [number, number],
-        redCards: [1, 1] as [number, number],
+        tournament: "FIFA WORLD CUP - QUARTER FINALS",
+        possession: [55, 45] as [number, number],
+        shots: [15, 8] as [number, number],
+        yellowCards: [2, 3] as [number, number],
+        redCards: [0, 0] as [number, number],
         lineups: {
-          home: ["Maignan (GK)", "Calabria", "Tomori", "Gabbia", "Hernandez", "Fofana", "Reijnders", "Pulisic", "Loftus-Cheek", "Leao", "Morata"],
-          away: ["Sommer (GK)", "Pavard", "Acerbi", "Bastoni", "Darmian", "Barella", "Calhanoglu", "Mkhitaryan", "Dimarco", "Thuram", "Martinez"]
+          home: ["Costa (GK)", "Cancelo", "Dias", "Inacio", "Mendes", "Fernandes", "Palhinha", "Vitinha", "Silva", "Ronaldo", "Leao"],
+          away: ["Bounou (GK)", "Hakimi", "Aguerd", "Saiss", "Mazraoui", "Amrabat", "Ounahi", "Amallah", "Ziyech", "En-Nesyri", "Boufal"]
         }
       };
-
+ 
       matches = [match1, match2, match3, match4, match5];
     }
     

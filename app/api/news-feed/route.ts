@@ -2,134 +2,192 @@ import { NextResponse } from "next/server";
 
 export const dynamic = "force-dynamic";
 
+const FEEDS = [
+  { url: "https://feeds.bbci.co.uk/sport/football/rss.xml", name: "BBC Sport" },
+  { url: "https://www.skysports.com/rss/12040", name: "Sky Sports" },
+  { url: "https://www.espn.com/espn/rss/soccer/news", name: "ESPN FC" }
+];
+
+const USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36";
+
+function cleanCDATA(str: string) {
+  if (!str) return "";
+  return str
+    .replace(/<!\[CDATA\[([\s\S]*?)\]\]>/g, "$1")
+    .replace(/&amp;/g, "&")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/<\/?[^>]+(>|$)/g, "") // strip HTML tags
+    .trim();
+}
+
+function parseFeed(xml: string, feedSource: string) {
+  const items: any[] = [];
+  const itemMatches = xml.matchAll(/<item>([\s\S]*?)<\/item>/g);
+  
+  for (const match of itemMatches) {
+    const itemText = match[1];
+    const titleMatch = itemText.match(/<title(?: [^>]*)?>([\s\S]*?)<\/title>/i);
+    const descMatch = itemText.match(/<description(?: [^>]*)?>([\s\S]*?)<\/description>/i);
+    const linkMatch = itemText.match(/<link(?: [^>]*)?>([\s\S]*?)<\/link>/i);
+    const dateMatch = itemText.match(/<pubDate(?: [^>]*)?>([\s\S]*?)<\/pubDate>/i);
+    
+    const title = cleanCDATA(titleMatch?.[1] || "");
+    const summary = cleanCDATA(descMatch?.[1] || "");
+    const link = linkMatch?.[1]?.trim() || "";
+    const pubDateStr = dateMatch?.[1]?.trim() || "";
+    
+    if (title) {
+      items.push({
+        title,
+        summary: summary || "Read the full coverage on the official portal.",
+        link,
+        pubDateStr,
+        source: feedSource
+      });
+    }
+  }
+  return items;
+}
+
+function getRelativeTime(pubDateStr: string) {
+  if (!pubDateStr) return "Recently";
+  try {
+    const dateObj = new Date(pubDateStr);
+    if (!isNaN(dateObj.getTime())) {
+      const diffMs = Date.now() - dateObj.getTime();
+      const diffHrs = Math.floor(diffMs / (1000 * 60 * 60));
+      if (diffHrs < 1) {
+        const diffMins = Math.floor(diffMs / (1000 * 60));
+        return diffMins <= 0 ? "Just now" : `${diffMins}m ago`;
+      } else if (diffHrs < 24) {
+        return `${diffHrs}h ago`;
+      } else {
+        return dateObj.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+      }
+    }
+  } catch {
+    // ignore and return raw date
+  }
+  return pubDateStr;
+}
+
+function getCategory(title: string) {
+  const t = title.toLowerCase();
+  if (t.includes("world cup") || t.includes("fifa") || t.includes("international") || t.includes("qualifier")) return "WORLD CUP";
+  if (t.includes("transfer") || t.includes("signing") || t.includes("deal") || t.includes("bid") || t.includes("agree")) return "TRANSFERS";
+  if (t.includes("injury") || t.includes("fitness") || t.includes("ruled out") || t.includes("squad")) return "SQUAD UPDATE";
+  if (t.includes("tactics") || t.includes("formation") || t.includes("coach") || t.includes("manager") || t.includes("appoint")) return "TACTICS";
+  return "BREAKING NEWS";
+}
+
 export async function GET() {
   try {
-    let items: any[] = [];
+    let aggregatedItems: any[] = [];
     
-    // Attempt to fetch live RSS news feed from ESPN
-    try {
-      const res = await fetch("https://www.espn.com/espn/rss/soccer/news", {
-        next: { revalidate: 120 } // cache for 2 minutes
-      });
-      
-      if (res.ok) {
-        const xml = await res.text();
-        
-        // Match tag item blocks
-        const itemMatches = xml.matchAll(/<item>([\s\S]*?)<\/item>/g);
-        
-        for (const match of itemMatches) {
-          const itemText = match[1];
-          
-          const cleanCDATA = (str: string) => {
-            if (!str) return "";
-            return str
-              .replace(/<!\[CDATA\[([\s\S]*?)\]\]>/g, "$1")
-              .replace(/&amp;/g, "&")
-              .replace(/&lt;/g, "<")
-              .replace(/&gt;/g, ">")
-              .trim();
-          };
-          
-          const titleMatch = itemText.match(/<title(?: [^>]*)?>([\s\S]*?)<\/title>/i);
-          const descMatch = itemText.match(/<description(?: [^>]*)?>([\s\S]*?)<\/description>/i);
-          const linkMatch = itemText.match(/<link(?: [^>]*)?>([\s\S]*?)<\/link>/i);
-          const dateMatch = itemText.match(/<pubDate(?: [^>]*)?>([\s\S]*?)<\/pubDate>/i);
-          
-          const title = cleanCDATA(titleMatch?.[1] || "");
-          const summary = cleanCDATA(descMatch?.[1] || "");
-          const link = linkMatch?.[1]?.trim() || "";
-          let publishedAt = dateMatch?.[1]?.trim() || "";
-          
-          if (publishedAt) {
-            try {
-              const dateObj = new Date(publishedAt);
-              if (!isNaN(dateObj.getTime())) {
-                const diffMs = Date.now() - dateObj.getTime();
-                const diffHrs = Math.floor(diffMs / (1000 * 60 * 60));
-                if (diffHrs < 1) {
-                  const diffMins = Math.floor(diffMs / (1000 * 60));
-                  publishedAt = `${diffMins}m ago`;
-                } else if (diffHrs < 24) {
-                  publishedAt = `${diffHrs}h ago`;
-                } else {
-                  publishedAt = dateObj.toLocaleDateString("en-US", { month: "short", day: "numeric" });
-                }
-              }
-            } catch {
-              // fallback to raw text
-            }
-          }
-          
-          if (title) {
-            items.push({
-              id: `live-news-${items.length + 1}`,
-              title,
-              summary: summary || "Read full coverage on ESPN website.",
-              category: "BREAKING NEWS",
-              publishedAt: publishedAt || "Recently",
-              readTime: `${Math.max(3, Math.min(8, Math.ceil(title.split(" ").length / 22)))} min read`,
-              author: "ESPN FC Editor"
-            });
-          }
+    // Fetch from all RSS feeds concurrently
+    const promises = FEEDS.map(async (feed) => {
+      try {
+        const res = await fetch(feed.url, {
+          headers: { "User-Agent": USER_AGENT },
+          next: { revalidate: 60 } // cache for 1 minute
+        });
+        if (res.ok) {
+          const xml = await res.text();
+          return parseFeed(xml, feed.name);
         }
+      } catch (err) {
+        console.warn(`Failed to fetch RSS from ${feed.name}:`, err);
       }
-    } catch (apiError) {
-      console.warn("ESPN RSS news fetch failed. Loading premium fallback stories...", apiError);
-    }
+      return [];
+    });
     
-    // Fallback breaking stories if news list is empty (API block/offline)
-    if (items.length === 0) {
-      items = [
+    const results = await Promise.all(promises);
+    results.forEach((items) => {
+      aggregatedItems = aggregatedItems.concat(items);
+    });
+    
+    // De-duplicate based on Title similarity (exact match or prefix match)
+    const seenTitles = new Set<string>();
+    let uniqueItems = aggregatedItems.filter((item) => {
+      const normalizedTitle = item.title.toLowerCase().substring(0, 30);
+      if (seenTitles.has(normalizedTitle)) {
+        return false;
+      }
+      seenTitles.add(normalizedTitle);
+      return true;
+    });
+    
+    // Sort items by pubDate descending
+    uniqueItems.sort((a, b) => {
+      const timeA = new Date(a.pubDateStr).getTime() || 0;
+      const timeB = new Date(b.pubDateStr).getTime() || 0;
+      return timeB - timeA;
+    });
+    
+    // Map to final schema
+    let newsArticles = uniqueItems.map((item, idx) => ({
+      id: `live-news-${idx + 1}`,
+      title: item.title,
+      summary: item.summary,
+      category: getCategory(item.title),
+      publishedAt: getRelativeTime(item.pubDateStr),
+      readTime: `${Math.max(3, Math.min(8, Math.ceil(item.title.split(" ").length / 22)))} min read`,
+      author: `${item.source} Editor`
+    }));
+    
+    // Fallback breaking stories (if all feeds failed or are offline)
+    if (newsArticles.length === 0) {
+      newsArticles = [
         {
           id: "sim-news-1",
-          title: "Mbappé Clinches Champions League Golden Boot Race Lead",
-          summary: "Real Madrid's star striker nets double against Man City, securing his pole position in the season's scoring charts and paving the way to a historic final qualification.",
-          category: "CHAMPIONS LEAGUE",
-          publishedAt: "10m ago",
+          title: "Vozinha Heroics Lead Cape Verde to World Cup Draw Against Spain",
+          summary: "In a spectacular World Cup upset, 40-year-old goalkeeper Vozinha saves critical headers from Torres and Yamal to secure a historic clean sheet for the World Cup debutants.",
+          category: "WORLD CUP",
+          publishedAt: "15m ago",
           readTime: "4 min read",
-          author: "Marcus Vane"
+          author: "Sky Sports Editor"
         },
         {
           id: "sim-news-2",
-          title: "Tactical Masterclass: How Pep's Inverted Fullbacks Stunned Bernabéu",
-          summary: "A deep tactical analysis of Guardiola's hybrid 3-2-4-1 buildup, detailing how Gvardiol and Stones manipulated defensive lines to trigger half-space overlaps.",
-          category: "TACTICAL EDITORIAL",
+          title: "Lionel Messi Declared Fit for Upcoming Quarterfinal Matchup",
+          summary: "Argentina's medical team confirms Messi has fully recovered from a minor hamstring strain and will lead the squad as captain in the next knockout stage.",
+          category: "SQUAD UPDATE",
           publishedAt: "1h ago",
-          readTime: "8 min read",
-          author: "Coach Roy"
+          readTime: "5 min read",
+          author: "BBC Sport Editor"
         },
         {
           id: "sim-news-3",
-          title: "Euros & Copa América Standouts Scouted for Premier League Transfers",
-          summary: "Top agents and scouts lock eyes on emerging midfield stars as summer windows approach. Real Madrid and Chelsea head-to-head bids anticipated.",
-          category: "TRANSFER MARKET",
+          title: "Tactical Study: The Resilient Low-Blocks Dominating Group Stages",
+          summary: "How smaller nations are utilizing organized low-blocks and compact defensive lines to disrupt possessional play from tournament giants.",
+          category: "TACTICS",
           publishedAt: "3h ago",
-          readTime: "6 min read",
-          author: "Dominic Thorne"
+          readTime: "7 min read",
+          author: "ESPN FC Editor"
         },
         {
           id: "sim-news-4",
-          title: "Yamal's Historic Performance Sparks New Era at Barcelona",
-          summary: "The young winger's electric footwork and clinical assists during the European quarterfinals establish him as the cornerstone of Barca's future squad campaigns.",
-          category: "PLAYER PROFILE",
+          title: "FIFA World Cup Viewership Reaches Historic All-Time Peak",
+          summary: "Official metrics indicate high-fidelity digital streaming networks have pushed viewership to record levels, with millions tuning in via low-latency streams.",
+          category: "WORLD CUP",
           publishedAt: "5h ago",
-          readTime: "5 min read",
-          author: "Sarah Sterling"
+          readTime: "4 min read",
+          author: "FIFA Media Office"
         },
         {
           id: "sim-news-5",
-          title: "High-Fidelity Broadcast Cameras Deployed for Stadiums",
-          summary: "Official tournament directors approve the installation of ultra-high definition cable cams and real-time interactive AR overlays for all upcoming major matches.",
-          category: "BROADCAST TECH",
-          publishedAt: "1d ago",
-          readTime: "3 min read",
-          author: "Julian Vance"
+          title: "Lamine Yamal Sparking World Cup Transfer Speculation",
+          summary: "The young winger's performance in Spain's opening match draws praises from scouts across global clubs anticipating upcoming transfer windows.",
+          category: "TRANSFERS",
+          publishedAt: "8h ago",
+          readTime: "6 min read",
+          author: "Transfer Market Analyst"
         }
       ];
     }
     
-    return NextResponse.json(items);
+    return NextResponse.json(newsArticles);
   } catch (error: any) {
     console.error("Critical news feed error:", error);
     return NextResponse.json({ error: error.message }, { status: 500 });
