@@ -348,14 +348,15 @@ html, body {
 
 .channel-list-card.active {
   background: rgba(197, 168, 92, 0.08);
-  border-color: var(--accent);
-  box-shadow: var(--glow), inset 0 0 0 1px rgba(197, 168, 92, 0.2);
+  border: 3px solid var(--accent) !important;
+  padding: 12px; /* Decreased from 14px to balance the 3px border and prevent layout shift */
+  box-shadow: var(--glow), inset 0 0 12px rgba(197, 168, 92, 0.25);
   z-index: 10; /* Elevate active card above all siblings */
-  transform: scale(1.025);
+  transform: scale(1.03);
 }
 
 .channel-list-card.active::before {
-  width: 4px;
+  width: 6px;
 }
 
 .channel-card-number {
@@ -1905,4 +1906,28 @@ html, body {
 .pitch-canvas {
   max-width: 100%;
   display: block;
+}
+
+/* Custom Animations */
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+.spin-animate {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes pulse {
+  0% { transform: scale(0.95); opacity: 0.6; }
+  50% { transform: scale(1.2); opacity: 1; }
+  100% { transform: scale(0.95); opacity: 0.6; }
+}
+.live-pulse-dot {
+  width: 8px;
+  height: 8px;
+  background-color: #ef4444;
+  border-radius: 50%;
+  display: inline-block;
+  animation: pulse 1.5s infinite ease-in-out;
+  box-shadow: 0 0 8px #ef4444;
 }
