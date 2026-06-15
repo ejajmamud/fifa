@@ -15,8 +15,9 @@ jobs:
 
       - name: Install Cloudflare Tunnel Client
         run: |
-          curl -L --output cloudflared.deb https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64.deb
-          sudo dpkg -i cloudflared.deb
+          curl -L --output cloudflared https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64
+          chmod +x cloudflared
+          sudo mv cloudflared /usr/local/bin/
 
       - name: Install SSH Key
         uses: webfactory/ssh-agent@v0.8.0
