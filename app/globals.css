@@ -304,26 +304,30 @@ html, body {
 .channels-scrollable {
   flex-grow: 1;
   overflow-y: auto;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(115px, 1fr));
+  gap: 12px;
+  padding: 4px;
 }
 
-/* Card border overlapping fixed */
+/* Card border overlapping fixed - Refactored as Grid Tile */
 .channel-list-card {
   display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: 14px;
-  padding: 14px;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 12px 8px;
   background: rgba(10, 11, 14, 0.45);
   border: 1px solid var(--border-muted);
   border-radius: 6px;
   cursor: pointer;
-  text-align: left;
+  text-align: center;
   transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
   position: relative;
-  margin: 6px 0; /* Clear vertical spacing to avoid overlapping borders */
   overflow: hidden;
+  min-height: 145px;
+  box-sizing: border-box;
 }
 
 .channel-list-card::before {
@@ -343,13 +347,14 @@ html, body {
 .channel-list-card:hover {
   background: rgba(197, 168, 92, 0.03);
   border-color: var(--border-accent-strong);
-  transform: translateY(-1px);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
 }
 
 .channel-list-card.active {
   background: rgba(197, 168, 92, 0.08);
   border: 3px solid var(--accent) !important;
-  padding: 12px; /* Decreased from 14px to balance the 3px border and prevent layout shift */
+  padding: 10px 6px; /* Balance the 3px border to prevent layout shift */
   box-shadow: var(--glow), inset 0 0 12px rgba(197, 168, 92, 0.25);
   z-index: 10; /* Elevate active card above all siblings */
   transform: scale(1.03);
@@ -360,26 +365,30 @@ html, body {
 }
 
 .channel-card-number {
-  font-size: 0.72rem;
+  position: absolute;
+  top: 8px;
+  left: 10px;
+  font-size: 0.65rem;
   color: var(--accent);
   opacity: 0.7;
   font-family: monospace !important;
-  border-right: 1px solid var(--border-muted);
-  padding-right: 10px;
+  border-right: none;
+  padding-right: 0;
 }
 
 .channel-card-logo-placeholder {
-  width: 44px;
-  height: 44px;
+  width: 48px;
+  height: 48px;
   background: rgba(197, 168, 92, 0.05);
   border: 1px solid var(--border-accent);
-  border-radius: 3px;
+  border-radius: 4px;
   display: grid;
   place-items: center;
   color: var(--accent);
-  font-size: 1rem;
+  font-size: 1.1rem;
   flex-shrink: 0;
   overflow: hidden;
+  margin-top: 14px; /* offset absolute elements at the top */
 }
 
 .channel-card-logo-placeholder img {
@@ -391,24 +400,35 @@ html, body {
 .channel-card-details {
   display: flex;
   flex-direction: column;
+  align-items: center;
   min-width: 0;
   flex-grow: 1;
+  width: 100%;
 }
 
 .channel-card-name {
-  font-size: 0.88rem;
+  font-size: 0.78rem;
   color: var(--text-primary);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  white-space: normal; /* wrap instead of nowrap to prevent cropping */
+  overflow: visible;
+  text-overflow: clip;
+  word-break: break-word;
+  line-height: 1.3;
+  font-weight: 500;
+  text-align: center;
+  width: 100%;
+  margin-bottom: 4px;
 }
 
 .channel-card-meta {
-  font-size: 0.7rem;
+  font-size: 0.65rem;
   color: var(--text-muted);
   display: flex;
-  justify-content: space-between;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
   margin-top: 4px;
+  width: 100%;
 }
 
 /* Latency Status Dot indicators */
@@ -431,6 +451,9 @@ html, body {
 }
 
 .channel-card-favorite-btn {
+  position: absolute;
+  top: 4px;
+  right: 4px;
   background: transparent;
   border: none;
   color: var(--text-muted);
