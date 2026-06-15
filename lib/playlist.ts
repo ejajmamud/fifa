@@ -39,6 +39,10 @@ export type Match = {
     home: string[];
     away: string[];
   };
+  scorers?: {
+    home: string;
+    away: string;
+  };
 };
 
 export type NewsArticle = {
@@ -69,6 +73,10 @@ export function getLiveMatches(): Match[] {
       lineups: {
         home: ["Martinez", "Molina", "Romero", "Otamendi", "Tagliafico", "De Paul", "Fernandez", "Mac Allister", "Messi", "Alvarez", "Gonzalez"],
         away: ["Maignan", "Kounde", "Upamecano", "Saliba", "Hernandez", "Tchouameni", "Rabiot", "Dembele", "Griezmann", "Mbappe", "Giroud"]
+      },
+      scorers: {
+        home: "L. Messi 23', 108'; J. Alvarez 36'",
+        away: "K. Mbappe 80', 81'"
       }
     },
     {
@@ -87,6 +95,10 @@ export function getLiveMatches(): Match[] {
       lineups: {
         home: ["Ederson", "Danilo", "Marquinhos", "Gabriel", "Arana", "Guimaraes", "Gomes", "Paqueta", "Rodrygo", "Vinicius Jr", "Raphinha"],
         away: ["Neuer", "Kimmich", "Tah", "Rudiger", "Mittelstadt", "Andrich", "Kroos", "Musiala", "Gundogan", "Wirtz", "Havertz"]
+      },
+      scorers: {
+        home: "Neymar Jr 26'",
+        away: "K. Havertz 71'"
       }
     },
     {
@@ -105,6 +117,10 @@ export function getLiveMatches(): Match[] {
       lineups: {
         home: ["Raya", "Carvajal", "Le Normand", "Laporte", "Cucurella", "Rodri", "Ruiz", "Yamal", "Olmo", "Williams", "Morata"],
         away: ["Pickford", "Walker", "Stones", "Guehi", "Trippier", "Mainoo", "Rice", "Saka", "Bellingham", "Foden", "Kane"]
+      },
+      scorers: {
+        home: "N. Williams 47', M. Oyarzabal 86'",
+        away: ""
       }
     },
     {
@@ -123,6 +139,10 @@ export function getLiveMatches(): Match[] {
       lineups: {
         home: ["Vargas", "Munoz", "Sanchez", "Cuesta", "Mojica", "Rios", "Lerma", "Arias", "James Rodriguez", "Diaz", "Cordoba"],
         away: ["Rochet", "Nandez", "Gimenez", "Olivera", "Vina", "Valverde", "Ugarte", "Pellistri", "De Arrascaeta", "Araujo", "Nunez"]
+      },
+      scorers: {
+        home: "",
+        away: ""
       }
     },
     {
@@ -141,6 +161,10 @@ export function getLiveMatches(): Match[] {
       lineups: {
         home: ["Costa", "Cancelo", "Dias", "Inacio", "Mendes", "Fernandes", "Palhinha", "Vitinha", "Silva", "Ronaldo", "Leao"],
         away: ["Bounou", "Hakimi", "Aguerd", "Saiss", "Mazraoui", "Amrabat", "Ounahi", "Amallah", "Ziyech", "En-Nesyri", "Boufal"]
+      },
+      scorers: {
+        home: "Cristiano Ronaldo 4'",
+        away: ""
       }
     }
   ];

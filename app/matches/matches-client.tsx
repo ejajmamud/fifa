@@ -9,6 +9,23 @@ type MatchesClientPageProps = {
   channels: Channel[];
 };
 
+const getTeamFlag = (teamName: string) => {
+  const name = teamName.toLowerCase().trim();
+  if (name.includes("argentina")) return "https://flagcdn.com/w40/ar.png";
+  if (name.includes("france")) return "https://flagcdn.com/w40/fr.png";
+  if (name.includes("brazil")) return "https://flagcdn.com/w40/br.png";
+  if (name.includes("germany")) return "https://flagcdn.com/w40/de.png";
+  if (name.includes("spain")) return "https://flagcdn.com/w40/es.png";
+  if (name.includes("cape verde")) return "https://flagcdn.com/w40/cv.png";
+  if (name.includes("england")) return "https://flagcdn.com/w40/gb-eng.png";
+  if (name.includes("italy")) return "https://flagcdn.com/w40/it.png";
+  if (name.includes("portugal")) return "https://flagcdn.com/w40/pt.png";
+  if (name.includes("morocco")) return "https://flagcdn.com/w40/ma.png";
+  if (name.includes("colombia")) return "https://flagcdn.com/w40/co.png";
+  if (name.includes("uruguay")) return "https://flagcdn.com/w40/uy.png";
+  return null;
+};
+
 export function MatchesClientPage({ channels }: MatchesClientPageProps) {
   const [liveMatches, setLiveMatches] = useState<Match[]>([]);
   const [filter, setFilter] = useState<"ALL" | "LIVE" | "UPCOMING" | "FINISHED">("ALL");
@@ -62,6 +79,11 @@ export function MatchesClientPage({ channels }: MatchesClientPageProps) {
       return m.status === filter;
     });
   }, [matches, filter]);
+
+  // Grouped matches lists
+  const liveMatchesList = useMemo(() => filteredMatches.filter(m => m.status === "LIVE"), [filteredMatches]);
+  const upcomingMatchesList = useMemo(() => filteredMatches.filter(m => m.status === "UPCOMING"), [filteredMatches]);
+  const finishedMatchesList = useMemo(() => filteredMatches.filter(m => m.status === "FINISHED"), [filteredMatches]);
 
   // 2D Soccer Pitch Match Tracker Canvas Animation Loop
   const pitchCanvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -199,6 +221,108 @@ export function MatchesClientPage({ channels }: MatchesClientPageProps) {
     return () => cancelAnimationFrame(animationId);
   }, [selectedMatch]);
 
+  const renderMatchSection = (sectionTitle: string, list: Match[], isLiveSection = false) => {
+    if (list.length === 0) return null;
+    return (
+      <div style={{ display: "flex", flexDirection: "column", gap: "10px", marginBottom: "15px" }}>
+        <div style={{ fontSize: "0.72rem", color: isLiveSection ? "#ef4444" : "var(--accent)", fontWeight: "bold", textTransform: "uppercase", letterSpacing: "0.08em", display: "flex", alignItems: "center", gap: "6px", borderBottom: "1px solid rgba(255, 255, 255, 0.05)", paddingBottom: "6px" }}>
+          {isLiveSection && <span className="live-pulse-dot" style={{ margin: 0 }} />}
+          {sectionTitle}
+        </div>
+        {list.map((match) => {
+          const isSelected = selectedMatchId === match.id;
+          const isLive = match.status === "LIVE";
+          const isFinished = match.status === "FINISHED";
+          
+          let tileBg = "rgba(10, 11, 14, 0.45)";
+          let tileBorder = "1px solid var(--border-muted)";
+          if (isSelected) {
+            tileBg = "rgba(197, 168, 92, 0.08)";
+            tileBorder = "2px solid var(--accent)";
+          } else if (isLive) {
+            tileBg = "rgba(239, 68, 68, 0.03)";
+            tileBorder = "1px dashed rgba(239, 68, 68, 0.25)";
+          } else if (isFinished) {
+            tileBg = "rgba(10, 11, 14, 0.2)";
+            tileBorder = "1px solid rgba(255, 255, 255, 0.03)";
+          }
+          
+          return (
+            <article
+              key={match.id}
+              onClick={() => setSelectedMatchId(match.id)}
+              style={{
+                padding: "14px 16px",
+                background: tileBg,
+                border: tileBorder,
+                borderRadius: "6px",
+                cursor: "pointer",
+                display: "flex",
+                flexDirection: "column",
+                gap: "8px",
+                transition: "all 0.25s ease",
+                opacity: isFinished && !isSelected ? 0.75 : 1
+              }}
+            >
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: "0.65rem", color: "var(--text-muted)", textTransform: "uppercase" }}>
+                <span>{match.tournament}</span>
+                {isLive ? (
+                  <span style={{ color: "#ef4444", display: "flex", alignItems: "center", gap: "4px", fontWeight: "bold" }}>
+                    <span className="live-pulse-dot" />
+                    LIVE {match.time}
+                  </span>
+                ) : (
+                  <span>{match.status} {match.time && `· ${match.time}`}</span>
+                )}
+              </div>
+
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                    {getTeamFlag(match.homeTeam) && (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={getTeamFlag(match.homeTeam)!} alt="" style={{ width: "18px", height: "12px", objectFit: "cover", borderRadius: "1px" }} />
+                    )}
+                    <span style={{ fontSize: "0.9rem", color: "#fff", fontWeight: isLive ? "500" : "normal" }}>{match.homeTeam}</span>
+                  </div>
+                  <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                    {getTeamFlag(match.awayTeam) && (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={getTeamFlag(match.awayTeam)!} alt="" style={{ width: "18px", height: "12px", objectFit: "cover", borderRadius: "1px" }} />
+                    )}
+                    <span style={{ fontSize: "0.9rem", color: "#fff", fontWeight: isLive ? "500" : "normal" }}>{match.awayTeam}</span>
+                  </div>
+                </div>
+
+                <div style={{ display: "flex", flexDirection: "column", gap: "6px", textAlign: "right", fontFamily: "monospace", fontSize: "1.05rem", fontWeight: "bold" }}>
+                  <span style={{ color: isLive ? "var(--accent)" : "#fff" }}>{match.homeScore}</span>
+                  <span style={{ color: isLive ? "var(--accent)" : "#fff" }}>{match.awayScore}</span>
+                </div>
+              </div>
+              
+              {match.scorers && (isLive || isFinished) && (match.scorers.home || match.scorers.away) && (
+                <div style={{ display: "flex", flexDirection: "column", gap: "3px", fontSize: "0.7rem", color: "var(--text-muted)", borderTop: "1px solid rgba(255, 255, 255, 0.04)", paddingTop: "6px", marginTop: "2px" }}>
+                  {match.scorers.home && (
+                    <div style={{ display: "flex", gap: "6px", alignItems: "baseline" }}>
+                      <span style={{ fontSize: "0.6rem" }}>⚽</span>
+                      <span style={{ lineHeight: "1.2" }}>{match.scorers.home}</span>
+                    </div>
+                  )}
+                  {match.scorers.away && (
+                    <div style={{ display: "flex", gap: "6px", alignItems: "baseline" }}>
+                      <span style={{ fontSize: "0.6rem", color: "rgba(255,255,255,0.2)" }}>⚽</span>
+                      <span style={{ lineHeight: "1.2" }}>{match.scorers.away}</span>
+                    </div>
+                  )}
+                </div>
+              )}
+            </article>
+          );
+        })}
+      </div>
+    );
+  };
+
   return (
     <DashboardLayout channels={channels}>
       <div className="matches-main-grid">
@@ -251,56 +375,11 @@ export function MatchesClientPage({ channels }: MatchesClientPageProps) {
           {/* Matches Scroll list */}
           <div style={{ display: "flex", flexDirection: "column", gap: "12px", overflowY: "auto", flexGrow: 1 }} className="matches-scrollable">
             {filteredMatches.length > 0 ? (
-              filteredMatches.map((match) => {
-                const isSelected = selectedMatchId === match.id;
-                const isLive = match.status === "LIVE";
-                
-                return (
-                  <article
-                    key={match.id}
-                    onClick={() => setSelectedMatchId(match.id)}
-                    style={{
-                      padding: "16px",
-                      background: isSelected ? "rgba(197,168,92,0.08)" : "rgba(10, 11, 14, 0.45)",
-                      border: isSelected ? "2px solid var(--accent)" : "1px solid var(--border-muted)",
-                      borderRadius: "6px",
-                      cursor: "pointer",
-                      display: "flex",
-                      flexDirection: "column",
-                      gap: "8px",
-                      transition: "all 0.25s ease"
-                    }}
-                  >
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: "0.7rem", color: "var(--text-muted)", textTransform: "uppercase" }}>
-                      <span>{match.tournament}</span>
-                      {isLive ? (
-                        <span style={{ color: "#ef4444", display: "flex", alignItems: "center", gap: "4px", fontWeight: "bold" }}>
-                          <span className="live-pulse-dot" />
-                          LIVE {match.time}
-                        </span>
-                      ) : (
-                        <span>{match.status} {match.time && `· ${match.time}`}</span>
-                      )}
-                    </div>
-
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                      <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-                        <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                          <span style={{ fontSize: "0.95rem", color: "#fff" }}>{match.homeTeam}</span>
-                        </div>
-                        <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                          <span style={{ fontSize: "0.95rem", color: "#fff" }}>{match.awayTeam}</span>
-                        </div>
-                      </div>
-
-                      <div style={{ display: "flex", flexDirection: "column", gap: "6px", textAlign: "right", fontFamily: "monospace", fontSize: "1.1rem", fontWeight: "bold" }}>
-                        <span style={{ color: isLive ? "var(--accent)" : "#fff" }}>{match.homeScore}</span>
-                        <span style={{ color: isLive ? "var(--accent)" : "#fff" }}>{match.awayScore}</span>
-                      </div>
-                    </div>
-                  </article>
-                );
-              })
+              <>
+                {renderMatchSection("Live Matches", liveMatchesList, true)}
+                {renderMatchSection("Upcoming Matches", upcomingMatchesList, false)}
+                {renderMatchSection("Finished Matches", finishedMatchesList, false)}
+              </>
             ) : (
               <div style={{ textAlign: "center", padding: "40px", color: "var(--text-muted)" }}>
                 No matches currently match this filter.
@@ -321,7 +400,12 @@ export function MatchesClientPage({ channels }: MatchesClientPageProps) {
                 
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", width: "100%", maxWidth: "500px" }}>
                   <div style={{ textAlign: "center", flex: 1 }}>
-                    <Shield size={36} style={{ color: "var(--accent)", marginBottom: "8px" }} />
+                    {getTeamFlag(selectedMatch.homeTeam) ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={getTeamFlag(selectedMatch.homeTeam)!} alt="" style={{ width: "48px", height: "32px", objectFit: "cover", borderRadius: "3px", border: "1px solid var(--border-accent)", marginBottom: "8px", display: "inline-block" }} />
+                    ) : (
+                      <Shield size={36} style={{ color: "var(--accent)", marginBottom: "8px" }} />
+                    )}
                     <div style={{ fontSize: "1.1rem", color: "#fff", fontWeight: "bold" }}>{selectedMatch.homeTeam}</div>
                   </div>
                   
@@ -341,10 +425,37 @@ export function MatchesClientPage({ channels }: MatchesClientPageProps) {
                   </div>
 
                   <div style={{ textAlign: "center", flex: 1 }}>
-                    <Shield size={36} style={{ color: "#fff", marginBottom: "8px" }} />
+                    {getTeamFlag(selectedMatch.awayTeam) ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={getTeamFlag(selectedMatch.awayTeam)!} alt="" style={{ width: "48px", height: "32px", objectFit: "cover", borderRadius: "3px", border: "1px solid var(--border-accent)", marginBottom: "8px", display: "inline-block" }} />
+                    ) : (
+                      <Shield size={36} style={{ color: "#fff", marginBottom: "8px" }} />
+                    )}
                     <div style={{ fontSize: "1.1rem", color: "#fff", fontWeight: "bold" }}>{selectedMatch.awayTeam}</div>
                   </div>
                 </div>
+
+                {selectedMatch.scorers && (selectedMatch.status === "LIVE" || selectedMatch.status === "FINISHED") && (selectedMatch.scorers.home || selectedMatch.scorers.away) && (
+                  <div style={{ display: "flex", justifyContent: "space-between", width: "100%", maxWidth: "500px", fontSize: "0.75rem", color: "var(--text-muted)", marginTop: "15px", borderTop: "1px solid rgba(255,255,255,0.06)", paddingTop: "12px" }}>
+                    <div style={{ textAlign: "left", flex: 1, paddingRight: "15px", lineHeight: "1.4" }}>
+                      {selectedMatch.scorers.home && (
+                        <div>
+                          <span style={{ marginRight: "6px" }}>⚽</span>
+                          {selectedMatch.scorers.home}
+                        </div>
+                      )}
+                    </div>
+                    <div style={{ width: "40px" }} />
+                    <div style={{ textAlign: "right", flex: 1, paddingLeft: "15px", lineHeight: "1.4" }}>
+                      {selectedMatch.scorers.away && (
+                        <div>
+                          {selectedMatch.scorers.away}
+                          <span style={{ marginLeft: "6px" }}>⚽</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* 2D Canvas Match Tracker & Stats */}

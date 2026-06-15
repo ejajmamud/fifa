@@ -30,6 +30,48 @@ const lineupsCapeVerde = [
   "Monteiro", "Santos", "Duarte", "Bebé", "Mendes", "Rodrigues"
 ];
 
+function generateScorers(homeTeam: string, awayTeam: string, homeScore: number, awayScore: number, status: string) {
+  if (status === "UPCOMING") return { home: "", away: "" };
+  
+  const getScorersForTeam = (team: string, score: number, isHome: boolean) => {
+    if (score <= 0) return "";
+    const name = team.toLowerCase();
+    
+    let pool = ["Player 1", "Player 2", "Player 3"];
+    if (name.includes("argentina")) pool = ["L. Messi", "J. Alvarez", "L. Messi", "Angel Di Maria", "E. Fernandez"];
+    else if (name.includes("france")) pool = ["K. Mbappe", "K. Mbappe", "A. Griezmann", "M. Thuram", "O. Dembele"];
+    else if (name.includes("brazil")) pool = ["Vinicius Jr", "Rodrygo", "Neymar Jr", "Raphinha", "Gabriel Martinelli"];
+    else if (name.includes("germany")) pool = ["K. Havertz", "J. Musiala", "F. Wirtz", "L. Sane", "N. Fullkrug"];
+    else if (name.includes("spain")) pool = ["Nico Williams", "M. Oyarzabal", "Lamine Yamal", "Dani Olmo", "Alvaro Morata"];
+    else if (name.includes("cape verde")) pool = ["Ryan Mendes", "Garry Rodrigues", "Bebé", "J. Cabral"];
+    else if (name.includes("england")) pool = ["H. Kane", "J. Bellingham", "B. Saka", "P. Foden", "Cole Palmer"];
+    else if (name.includes("italy")) pool = ["F. Chiesa", "G. Scamacca", "N. Barella", "L. Pellegrini"];
+    else if (name.includes("portugal")) pool = ["Cristiano Ronaldo", "Bruno Fernandes", "Rafael Leao", "Joao Felix", "Goncalo Ramos"];
+    else if (name.includes("morocco")) pool = ["Y. En-Nesyri", "Hakim Ziyech", "A. Ounahi", "Sofiane Boufal"];
+    
+    const scorersList: string[] = [];
+    for (let i = 0; i < score; i++) {
+      const player = pool[i % pool.length];
+      const baseMin = isHome ? 15 : 28;
+      const min = Math.floor(baseMin + (i * 26) + (score * 5)) % 90 + 1;
+      scorersList.push(`${player} ${min}'`);
+    }
+    
+    scorersList.sort((a, b) => {
+      const minA = parseInt(a.split(" ").pop() || "0");
+      const minB = parseInt(b.split(" ").pop() || "0");
+      return minA - minB;
+    });
+    
+    return scorersList.join(", ");
+  };
+
+  return {
+    home: getScorersForTeam(homeTeam, homeScore, true),
+    away: getScorersForTeam(awayTeam, awayScore, false)
+  };
+}
+
 export async function GET() {
   try {
     let matches: any[] = [];
@@ -92,12 +134,17 @@ export async function GET() {
             countCards(away.team?.id, "red") || 0
           ];
           
+          const homeScore = parseInt(home.score) || 0;
+          const awayScore = parseInt(away.score) || 0;
+          const homeName = home.team?.displayName || "Home Team";
+          const awayName = away.team?.displayName || "Away Team";
+          
           return {
             id: event.id || `espn-${Math.random().toString(36).substr(2, 9)}`,
-            homeTeam: home.team?.displayName || "Home Team",
-            awayTeam: away.team?.displayName || "Away Team",
-            homeScore: parseInt(home.score) || 0,
-            awayScore: parseInt(away.score) || 0,
+            homeTeam: homeName,
+            awayTeam: awayName,
+            homeScore,
+            awayScore,
             status,
             time,
             tournament,
@@ -112,7 +159,8 @@ export async function GET() {
               away: away.team?.shortDisplayName
                 ? [away.team.shortDisplayName + " GK", "CB 1", "CB 2", "LB", "RB", "CM 1", "CM 2", "AM", "LW", "RW", "ST"]
                 : lineupsFrance
-            }
+            },
+            scorers: generateScorers(homeName, awayName, homeScore, awayScore, status)
           };
         }).filter((m: any) => 
           m.tournament.toLowerCase().includes("world cup") || 
@@ -156,9 +204,10 @@ export async function GET() {
         lineups: {
           home: lineupsArgentina,
           away: lineupsFrance
-        }
+        },
+        scorers: generateScorers("Argentina", "France", homeScore1, awayScore1, "LIVE")
       };
- 
+
       // Match 2: Brazil vs Germany (LIVE - offset by 30 mins)
       const cycleTime2 = ((timestamp + 1800000) % 5400000) / 60000;
       const mins2 = Math.floor(cycleTime2);
@@ -185,9 +234,10 @@ export async function GET() {
         lineups: {
           home: lineupsBrazil,
           away: lineupsGermany
-        }
+        },
+        scorers: generateScorers("Brazil", "Germany", homeScore2, awayScore2, "LIVE")
       };
- 
+
       // Match 3: Spain vs Cape Verde (FINISHED)
       const match3 = {
         id: "sim-match-3",
@@ -205,9 +255,13 @@ export async function GET() {
         lineups: {
           home: lineupsSpain,
           away: lineupsCapeVerde
+        },
+        scorers: {
+          home: "",
+          away: ""
         }
       };
- 
+
       // Match 4: England vs Italy (UPCOMING - starts at 19:45 today)
       const match4 = {
         id: "sim-match-4",
@@ -225,9 +279,13 @@ export async function GET() {
         lineups: {
           home: ["Pickford (GK)", "Walker", "Stones", "Guehi", "Trippier", "Mainoo", "Rice", "Saka", "Bellingham", "Foden", "Kane"],
           away: ["Donnarumma (GK)", "Di Lorenzo", "Bastoni", "Calafiori", "Dimarco", "Barella", "Jorginho", "Frattesi", "Chiesa", "Scamacca", "Pellegrini"]
+        },
+        scorers: {
+          home: "",
+          away: ""
         }
       };
- 
+
       // Match 5: Portugal vs Morocco (FINISHED)
       const match5 = {
         id: "sim-match-5",
@@ -245,9 +303,13 @@ export async function GET() {
         lineups: {
           home: ["Costa (GK)", "Cancelo", "Dias", "Inacio", "Mendes", "Fernandes", "Palhinha", "Vitinha", "Silva", "Ronaldo", "Leao"],
           away: ["Bounou (GK)", "Hakimi", "Aguerd", "Saiss", "Mazraoui", "Amrabat", "Ounahi", "Amallah", "Ziyech", "En-Nesyri", "Boufal"]
+        },
+        scorers: {
+          home: "Cristiano Ronaldo 4'",
+          away: ""
         }
       };
- 
+
       matches = [match1, match2, match3, match4, match5];
     }
     
