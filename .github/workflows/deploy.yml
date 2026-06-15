@@ -1,0 +1,82 @@
+name: CI/CD Auto-Deploy
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    name: Deploy App to VPS
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v3
+
+      - name: Install Cloudflare Tunnel Client
+        run: |
+          curl -L --output cloudflared.deb https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64.deb
+          sudo dpkg -i cloudflared.deb
+
+      - name: Install SSH Key
+        uses: webfactory/ssh-agent@v0.8.0
+        with:
+          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+          ssh-passphrase: ${{ secrets.SSH_PASSPHRASE }}
+
+      - name: Configure SSH Config with Cloudflare Access
+        run: |
+          mkdir -p ~/.ssh
+          cat <<EOF >> ~/.ssh/config
+          Host coolify-vps
+            HostName coolify-ssh.ejaj.website
+            User root
+            ProxyCommand /usr/local/bin/cloudflared access tcp --hostname %h
+            StrictHostKeyChecking no
+          EOF
+
+      - name: Rsync Workspace to VPS
+        run: |
+          echo "Syncing workspace to VPS..."
+          rsync -avz --delete \
+            --exclude='.git/' \
+            --exclude='node_modules/' \
+            --exclude='.next/' \
+            --exclude='out/' \
+            --exclude='venv/' \
+            --exclude='.idea/' \
+            ./ coolify-vps:/root/emj-sports/
+
+      - name: Rebuild and Restart Container on VPS
+        run: |
+          ssh coolify-vps "
+            cd /root/emj-sports
+            echo 'Building Docker container...'
+            docker build -t emj-sports:latest .
+            echo 'Stopping pre-existing container...'
+            docker stop emj-sports || true
+            docker rm emj-sports || true
+            echo 'Running new container with Traefik & Caddy routing labels...'
+            docker run -d \
+              --name emj-sports \
+              --restart unless-stopped \
+              --network coolify \
+              -l traefik.enable=true \
+              -l traefik.http.middlewares.gzip.compress=true \
+              -l traefik.http.routers.http-0-emjsports.entryPoints=http \
+              -l 'traefik.http.routers.http-0-emjsports.rule=Host(\`live.ejaj.website\`)' \
+              -l traefik.http.routers.http-0-emjsports.service=http-0-emjsports \
+              -l traefik.http.routers.https-0-emjsports.entryPoints=https \
+              -l traefik.http.routers.https-0-emjsports.middlewares=gzip \
+              -l 'traefik.http.routers.https-0-emjsports.rule=Host(\`live.ejaj.website\`)' \
+              -l traefik.http.routers.https-0-emjsports.service=https-0-emjsports \
+              -l traefik.http.routers.https-0-emjsports.tls=true \
+              -l traefik.http.routers.https-0-emjsports.tls.certresolver=letsencrypt \
+              -l traefik.http.services.http-0-emjsports.loadbalancer.server.port=3000 \
+              -l traefik.http.services.https-0-emjsports.loadbalancer.server.port=3000 \
+              -l 'caddy_0=https://live.ejaj.website' \
+              -l 'caddy_0.handle_path.0_reverse_proxy={{upstreams 3000}}' \
+              -l caddy_ingress_network=coolify \
+              emj-sports:latest
+            echo 'Auto-Deployment complete!'
+          "

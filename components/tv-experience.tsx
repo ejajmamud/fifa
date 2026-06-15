@@ -102,6 +102,20 @@ export function TvExperience({ channels }: TvExperienceProps) {
   const hlsRef = useRef<Hls | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const tvGridRef = useRef<HTMLDivElement | null>(null);
+  
+  // Dual Stream Refs and States
+  const videoRef2 = useRef<HTMLVideoElement | null>(null);
+  const hlsRef2 = useRef<Hls | null>(null);
+  const pitchCanvasRef = useRef<HTMLCanvasElement | null>(null);
+  const [isDualStream, setIsDualStream] = useState(false);
+  const [activeChannelId2, setActiveChannelId2] = useState<string>("");
+  const [isMuted2, setIsMuted2] = useState(true);
+  
+  // Live scores and news states
+  const [liveMatches, setLiveMatches] = useState<Match[]>([]);
+  const [liveNews, setLiveNews] = useState<NewsArticle[]>([]);
+  const [isHttps, setIsHttps] = useState(false);
+
   const [isLoading, setIsLoading] = useState(true);
   const [playError, setPlayError] = useState("");
   const [stats, setStats] = useState({
@@ -125,20 +139,34 @@ export function TvExperience({ channels }: TvExperienceProps) {
   const chatEndRef = useRef<HTMLDivElement | null>(null);
 
   // Match Center stats
-  const matches = useMemo(() => getLiveMatches(), []);
-  const [selectedMatchId, setSelectedMatchId] = useState<string>(matches[0]?.id ?? "");
+  const mockMatches = useMemo(() => getLiveMatches(), []);
+  const matches = liveMatches.length > 0 ? liveMatches : mockMatches;
+  const [selectedMatchId, setSelectedMatchId] = useState<string>(mockMatches[0]?.id ?? "");
+  
+  useEffect(() => {
+    if (matches.length > 0 && !matches.some(m => m.id === selectedMatchId)) {
+      setSelectedMatchId(matches[0].id);
+    }
+  }, [matches, selectedMatchId]);
+
   const selectedMatch = useMemo(
     () => matches.find((m) => m.id === selectedMatchId) ?? matches[0],
     [matches, selectedMatchId]
   );
 
   // Sports News
-  const news = useMemo(() => getSportsNews(), []);
+  const mockNews = useMemo(() => getSportsNews(), []);
+  const news = liveNews.length > 0 ? liveNews : mockNews;
 
   // Compute active channel
   const activeChannel = useMemo(
     () => channels.find((c) => c.id === activeChannelId) ?? channels[0],
     [channels, activeChannelId]
+  );
+
+  const activeChannel2 = useMemo(
+    () => channels.find((c) => c.id === activeChannelId2) ?? channels[1] ?? channels[0],
+    [channels, activeChannelId2]
   );
 
   // Filter groups
@@ -596,6 +624,244 @@ export function TvExperience({ channels }: TvExperienceProps) {
     }
   }, [volume, isMuted, playbackSpeed, brightness, contrast, saturation, goldTint]);
 
+  // Fetch live matches and news articles on mount and periodic refresh
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      setIsHttps(window.location.protocol === "https:");
+    }
+
+    const fetchMatches = () => {
+      fetch("/api/live-matches")
+        .then((res) => res.json())
+        .then((data) => {
+          if (data && data.length > 0 && !data.error) {
+            setLiveMatches(data);
+          }
+        })
+        .catch((err) => console.error("Error loading live matches:", err));
+    };
+
+    const fetchNews = () => {
+      fetch("/api/news-feed")
+        .then((res) => res.json())
+        .then((data) => {
+          if (data && data.length > 0 && !data.error) {
+            setLiveNews(data);
+          }
+        })
+        .catch((err) => console.error("Error loading news feed:", err));
+    };
+
+    fetchMatches();
+    fetchNews();
+
+    const interval = setInterval(() => {
+      fetchMatches();
+      fetchNews();
+    }, 45000); // 45 seconds polling
+
+    return () => clearInterval(interval);
+  }, []);
+
+  // HLS Video Stream engine 2 (for Dual Stream pane)
+  useEffect(() => {
+    if (!isDualStream || !activeChannel2 || !videoRef2.current) {
+      if (hlsRef2.current) {
+        hlsRef2.current.destroy();
+        hlsRef2.current = null;
+      }
+      return;
+    }
+
+    const video = videoRef2.current;
+    
+    if (hlsRef2.current) {
+      hlsRef2.current.destroy();
+      hlsRef2.current = null;
+    }
+
+    video.pause();
+    video.removeAttribute("src");
+    video.load();
+
+    let hlsInstance: Hls | null = null;
+
+    if (Hls.isSupported()) {
+      hlsInstance = new Hls({
+        lowLatencyMode: true,
+        backBufferLength: 60,
+        enableWorker: true,
+        maxBufferLength: bufferDelay
+      });
+
+      hlsRef2.current = hlsInstance;
+      hlsInstance.loadSource(activeChannel2.url);
+      hlsInstance.attachMedia(video);
+
+      hlsInstance.on(Hls.Events.MANIFEST_PARSED, () => {
+        video.play().catch(() => undefined);
+      });
+    } else if (video.canPlayType("application/vnd.apple.mpegurl")) {
+      video.src = activeChannel2.url;
+      video.addEventListener("loadedmetadata", () => {
+        video.play().catch(() => undefined);
+      });
+    }
+
+    return () => {
+      if (hlsInstance) {
+        hlsInstance.destroy();
+      }
+    };
+  }, [isDualStream, activeChannel2, bufferDelay]);
+
+  // Sync controls and filters on the secondary video tag (Dual Stream)
+  useEffect(() => {
+    if (videoRef2.current) {
+      videoRef2.current.volume = volume;
+      videoRef2.current.muted = isMuted2;
+      videoRef2.current.playbackRate = playbackSpeed;
+      videoRef2.current.style.filter = `brightness(${brightness}%) contrast(${contrast}%) saturate(${saturation}%) sepia(${goldTint}%)`;
+    }
+  }, [volume, isMuted2, playbackSpeed, brightness, contrast, saturation, goldTint, isDualStream]);
+
+  // 2D Soccer Pitch Match Tracker animation effect
+  useEffect(() => {
+    const canvas = pitchCanvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+    
+    let animationId: number;
+    let w = canvas.width;
+    let h = canvas.height;
+    
+    let ballX = w / 2;
+    let ballY = h / 2;
+    let ballTargetX = w / 2;
+    let ballTargetY = h / 2;
+    let ballSpeed = 0.04;
+    
+    let players: Array<{ x: number, y: number, team: "home" | "away" }> = [];
+    
+    const initPlayers = () => {
+      players = [];
+      // Home (Gold)
+      players.push({ x: w * 0.08, y: h / 2, team: "home" }); // GK
+      players.push({ x: w * 0.22, y: h * 0.25, team: "home" });
+      players.push({ x: w * 0.22, y: h * 0.75, team: "home" });
+      players.push({ x: w * 0.38, y: h * 0.3, team: "home" });
+      players.push({ x: w * 0.38, y: h * 0.7, team: "home" });
+      // Away (Platinum)
+      players.push({ x: w * 0.92, y: h / 2, team: "away" }); // GK
+      players.push({ x: w * 0.78, y: h * 0.25, team: "away" });
+      players.push({ x: w * 0.78, y: h * 0.75, team: "away" });
+      players.push({ x: w * 0.62, y: h * 0.3, team: "away" });
+      players.push({ x: w * 0.62, y: h * 0.7, team: "away" });
+    };
+    
+    let attackText = "Kickoff! Match Underway...";
+    
+    const draw = () => {
+      // Deep forest green field
+      ctx.fillStyle = "#0c1d12";
+      ctx.fillRect(0, 0, w, h);
+      
+      // Grass stripes
+      ctx.fillStyle = "#0d2114";
+      for (let i = 0; i < w; i += 40) {
+        if ((i / 40) % 2 === 0) {
+          ctx.fillRect(i, 0, 20, h);
+        }
+      }
+      
+      // Pitch lines (Gold)
+      ctx.strokeStyle = "rgba(197, 168, 92, 0.4)";
+      ctx.lineWidth = 1.5;
+      ctx.strokeRect(10, 10, w - 20, h - 20);
+      
+      // Center line & circle
+      ctx.beginPath();
+      ctx.moveTo(w / 2, 10);
+      ctx.lineTo(w / 2, h - 10);
+      ctx.stroke();
+      
+      ctx.beginPath();
+      ctx.arc(w / 2, h / 2, 30, 0, Math.PI * 2);
+      ctx.stroke();
+      
+      // Penalty boxes
+      ctx.strokeRect(10, h / 2 - 40, 35, 80);
+      ctx.strokeRect(w - 45, h / 2 - 40, 35, 80);
+      
+      // Draw Player Dots
+      players.forEach(p => {
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, 4, 0, Math.PI * 2);
+        ctx.fillStyle = p.team === "home" ? "#c5a85c" : "#ffffff";
+        ctx.fill();
+      });
+      
+      // Ball physics simulation
+      const dx = ballTargetX - ballX;
+      const dy = ballTargetY - ballY;
+      ballX += dx * ballSpeed;
+      ballY += dy * ballSpeed;
+      
+      if (Math.abs(dx) < 6 && Math.abs(dy) < 6) {
+        const homePoss = selectedMatch ? selectedMatch.possession[0] : 50;
+        const isHomeInPoss = Math.random() * 100 < homePoss;
+        
+        if (isHomeInPoss) {
+          // Ball moves to away team half (right side)
+          ballTargetX = w / 2 + Math.random() * (w / 2 - 30);
+          ballTargetY = 20 + Math.random() * (h - 40);
+          
+          if (Math.random() < 0.2) {
+            attackText = `${selectedMatch.homeTeam} building possession...`;
+          } else if (Math.random() < 0.1) {
+            attackText = `SHOT by ${selectedMatch.homeTeam}! Off-target.`;
+            ballTargetX = w - 10;
+            ballTargetY = h / 2 + (Math.random() * 30 - 15);
+          }
+        } else {
+          // Ball moves to home team half (left side)
+          ballTargetX = 30 + Math.random() * (w / 2 - 30);
+          ballTargetY = 20 + Math.random() * (h - 40);
+          
+          if (Math.random() < 0.2) {
+            attackText = `${selectedMatch.awayTeam} in transition...`;
+          } else if (Math.random() < 0.1) {
+            attackText = `Safe save by ${selectedMatch.homeTeam} Goalkeeper.`;
+            ballTargetX = 10;
+            ballTargetY = h / 2;
+          }
+        }
+      }
+      
+      // Draw Ball
+      ctx.beginPath();
+      ctx.arc(ballX, ballY, 3, 0, Math.PI * 2);
+      ctx.fillStyle = "#ffffff";
+      ctx.shadowColor = "#c5a85c";
+      ctx.shadowBlur = 6;
+      ctx.fill();
+      ctx.shadowBlur = 0;
+      
+      // Ticker text
+      ctx.fillStyle = "rgba(255, 255, 255, 0.75)";
+      ctx.font = "10px Marcellus, serif";
+      ctx.textAlign = "center";
+      ctx.fillText(attackText, w / 2, h - 15);
+      
+      animationId = requestAnimationFrame(draw);
+    };
+    
+    initPlayers();
+    draw();
+    return () => cancelAnimationFrame(animationId);
+  }, [selectedMatch]);
+
   // Stats Collector
   useEffect(() => {
     const interval = setInterval(() => {
@@ -845,53 +1111,55 @@ export function TvExperience({ channels }: TvExperienceProps) {
           <div className="live-tv-grid">
             {/* Left Column: Channels Search & Selection list */}
             <section className="channel-nav-panel" aria-label="Channels browser">
-              <div className="search-container">
-                <Search size={18} className="search-icon-svg" />
-                <input
-                  type="text"
-                  placeholder="Search channels..."
-                  className="search-input"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                />
-              </div>
-
-              {/* Sorting filters */}
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "10px", fontSize: "0.75rem", color: "var(--text-muted)" }}>
-                <span>Sort by:</span>
-                <div style={{ display: "flex", gap: "10px" }}>
-                  <button
-                    style={{ background: "transparent", border: "none", color: sortingOption === "number" ? "var(--accent)" : "inherit", cursor: "pointer" }}
-                    onClick={() => setSortingOption("number")}
-                  >
-                    Number
-                  </button>
-                  <button
-                    style={{ background: "transparent", border: "none", color: sortingOption === "name" ? "var(--accent)" : "inherit", cursor: "pointer" }}
-                    onClick={() => setSortingOption("name")}
-                  >
-                    Name
-                  </button>
-                  <button
-                    style={{ background: "transparent", border: "none", color: sortingOption === "latency" ? "var(--accent)" : "inherit", cursor: "pointer" }}
-                    onClick={() => setSortingOption("latency")}
-                  >
-                    Latency
-                  </button>
+              <div className="channel-nav-header-sticky">
+                <div className="search-container">
+                  <Search size={18} className="search-icon-svg" />
+                  <input
+                    type="text"
+                    placeholder="Search channels..."
+                    className="search-input"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                  />
                 </div>
-              </div>
 
-              {/* Group category badges */}
-              <div className="groups-container">
-                {groups.map(([groupName, count]) => (
-                  <button
-                    key={groupName}
-                    className={`group-badge ${activeGroup === groupName ? "active" : ""}`}
-                    onClick={() => setActiveGroup(groupName)}
-                  >
-                    {groupName} ({count})
-                  </button>
-                ))}
+                {/* Sorting filters */}
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "10px", fontSize: "0.75rem", color: "var(--text-muted)" }}>
+                  <span>Sort by:</span>
+                  <div style={{ display: "flex", gap: "10px" }}>
+                    <button
+                      style={{ background: "transparent", border: "none", color: sortingOption === "number" ? "var(--accent)" : "inherit", cursor: "pointer" }}
+                      onClick={() => setSortingOption("number")}
+                    >
+                      Number
+                    </button>
+                    <button
+                      style={{ background: "transparent", border: "none", color: sortingOption === "name" ? "var(--accent)" : "inherit", cursor: "pointer" }}
+                      onClick={() => setSortingOption("name")}
+                    >
+                      Name
+                    </button>
+                    <button
+                      style={{ background: "transparent", border: "none", color: sortingOption === "latency" ? "var(--accent)" : "inherit", cursor: "pointer" }}
+                      onClick={() => setSortingOption("latency")}
+                    >
+                      Latency
+                    </button>
+                  </div>
+                </div>
+
+                {/* Group category badges */}
+                <div className="groups-container">
+                  {groups.map(([groupName, count]) => (
+                    <button
+                      key={groupName}
+                      className={`group-badge ${activeGroup === groupName ? "active" : ""}`}
+                      onClick={() => setActiveGroup(groupName)}
+                    >
+                      {groupName} ({count})
+                    </button>
+                  ))}
+                </div>
               </div>
 
               {/* Channels Scroll list */}
@@ -941,19 +1209,69 @@ export function TvExperience({ channels }: TvExperienceProps) {
 
             {/* Center Column: Video Player Stage */}
             <section className="video-player-container" aria-label="Media player stage">
-              <div className="player-viewport-shell">
-                <video
-                  ref={videoRef}
-                  className={`player-video-element aspect-${aspectRatio}`}
-                  playsInline
-                  onClick={(e) => {
-                    e.preventDefault();
-                    if (videoRef.current) {
-                      if (videoRef.current.paused) videoRef.current.play().catch(() => undefined);
-                      else videoRef.current.pause();
-                    }
-                  }}
-                />
+              <div className={`player-viewport-shell ${isDualStream ? "dual-layout" : ""}`}>
+                {/* Mixed Content HTTPS block warning */}
+                {isHttps && activeChannel?.url?.startsWith("http://") && (
+                  <div className="mixed-content-alert-banner">
+                    <span className="alert-text">
+                      Stream Blocked: Browsers prevent HTTP streams on secure HTTPS sites. Switch to HTTP mode to play this feed.
+                    </span>
+                    <button
+                      className="mixed-content-redirect-btn"
+                      onClick={() => {
+                        window.location.href = window.location.href.replace("https://", "http://");
+                      }}
+                    >
+                      Switch to HTTP Player
+                    </button>
+                  </div>
+                )}
+
+                <div className="video-shell-pane primary">
+                  <video
+                    ref={videoRef}
+                    className={`player-video-element aspect-${aspectRatio}`}
+                    playsInline
+                    onClick={(e) => {
+                      e.preventDefault();
+                      if (videoRef.current) {
+                        if (videoRef.current.paused) videoRef.current.play().catch(() => undefined);
+                        else videoRef.current.pause();
+                      }
+                    }}
+                  />
+                  {isDualStream && (
+                    <div className="pane-stream-label">
+                      <span>Pane 1: {activeChannel.name}</span>
+                      <button className="pane-audio-toggle" onClick={() => setIsMuted(p => !p)}>
+                        {isMuted ? "Unmute Audio 1" : "Mute Audio 1"}
+                      </button>
+                    </div>
+                  )}
+                </div>
+
+                {isDualStream && (
+                  <div className="video-shell-pane secondary">
+                    <video
+                      ref={videoRef2}
+                      className={`player-video-element aspect-${aspectRatio}`}
+                      playsInline
+                      onClick={(e) => {
+                        e.preventDefault();
+                        if (videoRef2.current) {
+                          if (videoRef2.current.paused) videoRef2.current.play().catch(() => undefined);
+                          else videoRef2.current.pause();
+                        }
+                      }}
+                    />
+                    <div className="pane-stream-label">
+                      <span>Pane 2: {activeChannel2.name}</span>
+                      <button className="pane-audio-toggle" onClick={() => setIsMuted2(p => !p)}>
+                        {isMuted2 ? "Unmute Audio 2" : "Mute Audio 2"}
+                      </button>
+                    </div>
+                  </div>
+                )}
 
                 {/* Sleep Mode Overlay */}
                 {isSleeping && (
@@ -1110,6 +1428,48 @@ export function TvExperience({ channels }: TvExperienceProps) {
                       >
                         <Info size={18} />
                       </button>
+
+                      {/* Dual-Stream Split Toggle */}
+                      <button
+                        className={`player-hud-btn ${isDualStream ? "active" : ""}`}
+                        onClick={() => {
+                          setIsDualStream(prev => !prev);
+                          if (!activeChannelId2 && channels[1]) {
+                            setActiveChannelId2(channels[1].id);
+                          }
+                        }}
+                        style={{ color: isDualStream ? "var(--accent)" : "inherit" }}
+                        title="Toggle Dual Split-Stream"
+                      >
+                        <LayoutGrid size={18} />
+                      </button>
+
+                      {isDualStream && (
+                        <div style={{ display: "flex", alignItems: "center" }}>
+                          <select
+                            style={{
+                              background: "rgba(0,0,0,0.85)",
+                              border: "1px solid var(--border-accent)",
+                              color: "var(--text-primary)",
+                              fontSize: "0.7rem",
+                              padding: "4px 8px",
+                              outline: "none",
+                              cursor: "pointer",
+                              borderRadius: "4px",
+                              maxWidth: "110px",
+                              textOverflow: "ellipsis"
+                            }}
+                            value={activeChannelId2}
+                            onChange={(e) => setActiveChannelId2(e.target.value)}
+                          >
+                            {channels.map((c) => (
+                              <option key={c.id} value={c.id}>
+                                Pane 2: {c.name}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                      )}
 
                       {/* Aspect Ratio config selector */}
                       <button
@@ -1322,6 +1682,16 @@ export function TvExperience({ channels }: TvExperienceProps) {
                   <span style={{ fontSize: "0.75rem", color: "var(--text-muted)" }}>AWAY</span>
                 </div>
               </div>
+
+              {/* 2D Canvas Match Pitch Tracker */}
+              {selectedMatch.status !== "UPCOMING" && (
+                <div className="pitch-tracker-wrapper">
+                  <div className="pitch-tracker-header">Live 2D Match Tracker</div>
+                  <div className="pitch-canvas-container">
+                    <canvas ref={pitchCanvasRef} width={310} height={200} className="pitch-canvas" />
+                  </div>
+                </div>
+              )}
 
               {selectedMatch.status !== "UPCOMING" ? (
                 <div className="match-detail-stats-section">
