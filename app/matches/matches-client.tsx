@@ -11,18 +11,75 @@ type MatchesClientPageProps = {
 
 const getTeamFlag = (teamName: string) => {
   const name = teamName.toLowerCase().trim();
-  if (name.includes("argentina")) return "https://flagcdn.com/w40/ar.png";
-  if (name.includes("france")) return "https://flagcdn.com/w40/fr.png";
-  if (name.includes("brazil")) return "https://flagcdn.com/w40/br.png";
-  if (name.includes("germany")) return "https://flagcdn.com/w40/de.png";
-  if (name.includes("spain")) return "https://flagcdn.com/w40/es.png";
-  if (name.includes("cape verde")) return "https://flagcdn.com/w40/cv.png";
-  if (name.includes("england")) return "https://flagcdn.com/w40/gb-eng.png";
-  if (name.includes("italy")) return "https://flagcdn.com/w40/it.png";
-  if (name.includes("portugal")) return "https://flagcdn.com/w40/pt.png";
-  if (name.includes("morocco")) return "https://flagcdn.com/w40/ma.png";
-  if (name.includes("colombia")) return "https://flagcdn.com/w40/co.png";
-  if (name.includes("uruguay")) return "https://flagcdn.com/w40/uy.png";
+  const countryCodes: Record<string, string> = {
+    "argentina": "ar",
+    "france": "fr",
+    "brazil": "br",
+    "germany": "de",
+    "spain": "es",
+    "cape verde": "cv",
+    "england": "gb-eng",
+    "italy": "it",
+    "portugal": "pt",
+    "morocco": "ma",
+    "colombia": "co",
+    "uruguay": "uy",
+    "belgium": "be",
+    "egypt": "eg",
+    "saudi arabia": "sa",
+    "new zealand": "nz",
+    "iran": "ir",
+    "netherlands": "nl",
+    "croatia": "hr",
+    "senegal": "sn",
+    "japan": "jp",
+    "south korea": "kr",
+    "usa": "us",
+    "united states": "us",
+    "mexico": "mx",
+    "canada": "ca",
+    "australia": "au",
+    "ecuador": "ec",
+    "qatar": "qa",
+    "wales": "gb-wls",
+    "scotland": "gb-sct",
+    "poland": "pl",
+    "switzerland": "ch",
+    "denmark": "dk",
+    "tunisia": "tn",
+    "costa rica": "cr",
+    "ghana": "gh",
+    "cameroon": "cm",
+    "serbia": "rs",
+    "sweden": "se",
+    "ukraine": "ua",
+    "turkey": "tr",
+    "austria": "at",
+    "hungary": "hu",
+    "romania": "ro",
+    "slovakia": "sk",
+    "slovenia": "si",
+    "czechia": "cz",
+    "czech republic": "cz",
+    "georgia": "ge",
+    "albania": "al",
+    "nigeria": "ng",
+    "algeria": "dz",
+    "south africa": "za",
+    "ivory coast": "ci",
+    "cote d'ivoire": "ci",
+    "chile": "cl",
+    "peru": "pe",
+    "venezuela": "ve",
+    "paraguay": "py",
+    "bolivia": "bo"
+  };
+
+  for (const key of Object.keys(countryCodes)) {
+    if (name.includes(key)) {
+      return `https://flagcdn.com/w40/${countryCodes[key]}.png`;
+    }
+  }
   return null;
 };
 

@@ -53,6 +53,7 @@ export type NewsArticle = {
   publishedAt: string;
   readTime: string;
   author: string;
+  link?: string;
 };
 
 export function getLiveMatches(): Match[] {

@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useMemo, useState } from "react";
-import { Search, Newspaper, Clock, User, ArrowLeft, RefreshCw, ChevronRight } from "lucide-react";
+import { Search, Clock, User, RefreshCw, ChevronRight } from "lucide-react";
 import { Channel, NewsArticle, getSportsNews } from "@/lib/playlist";
 import { DashboardLayout } from "@/components/dashboard-layout";
 
@@ -78,23 +78,12 @@ export function NewsClientPage({ channels }: NewsClientPageProps) {
     });
   }, [news, activeCategory, searchQuery]);
 
-  // Generate simulated paragraphs for full article view
-  const fullArticleText = useMemo(() => {
-    if (!selectedArticle) return [];
-    return [
-      `${selectedArticle.summary}`,
-      `Industry sources suggest this development marks a significant shift in current team formations and regional broadcast distribution. The growing reliance on digital infrastructures has allowed networks to expand their coverage footprints, bringing high-fidelity, low-latency live events directly to millions of international fans.`,
-      `Key administrators have emphasized that quality and security are paramount moving forward. By establishing robust streaming pipelines and leveraging containerized microservices behind secure load balancers, the platform ensures uninterrupted visual handshakes. The architectural approach resolves multiple historical lag overlays, enabling screens of all scales to render streams seamlessly.`,
-      `In the coming weeks, further updates are planned for soccer divisions globally. Analysts expect players and organizations alike to benefit from enhanced telemetry tools, enabling deep tactical studies and real-time possession analytics during matches.`
-    ];
-  }, [selectedArticle]);
-
   return (
     <DashboardLayout channels={channels}>
       <div className="news-main-grid">
         
-        {/* Left Column: News list panel */}
-        <section style={{ display: "flex", flexDirection: "column", gap: "20px", overflow: "hidden" }}>
+        {/* Single Column: News Feed list */}
+        <section style={{ display: "flex", flexDirection: "column", gap: "20px", overflow: "hidden", width: "100%" }}>
           
           {/* Header search and refresh */}
           <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
@@ -140,39 +129,123 @@ export function NewsClientPage({ channels }: NewsClientPageProps) {
             ))}
           </div>
 
-          {/* Articles list */}
-          <div style={{ display: "flex", flexDirection: "column", gap: "12px", overflowY: "auto", flexGrow: 1 }} className="news-scrollable">
+          {/* Articles list as Accordion */}
+          <div style={{ display: "flex", flexDirection: "column", gap: "14px", overflowY: "auto", flexGrow: 1 }} className="news-scrollable">
             {filteredNews.length > 0 ? (
               filteredNews.map((article) => {
                 const isSelected = selectedArticleId === article.id;
                 return (
                   <article
                     key={article.id}
-                    onClick={() => setSelectedArticleId(article.id)}
+                    onClick={() => setSelectedArticleId(isSelected ? "" : article.id)}
                     style={{
-                      padding: "16px",
+                      padding: "20px",
                       background: isSelected ? "rgba(197,168,92,0.08)" : "rgba(10, 11, 14, 0.45)",
                       border: isSelected ? "2px solid var(--accent)" : "1px solid var(--border-muted)",
                       borderRadius: "6px",
                       cursor: "pointer",
                       display: "flex",
                       flexDirection: "column",
-                      gap: "8px",
-                      transition: "all 0.25s ease"
+                      gap: "10px",
+                      transition: "all 0.25s cubic-bezier(0.16, 1, 0.3, 1)"
                     }}
                   >
-                    <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.7rem", color: "var(--accent)", textTransform: "uppercase" }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.72rem", color: "var(--accent)", textTransform: "uppercase", letterSpacing: "0.05em" }}>
                       <span>{article.category}</span>
                       <span style={{ color: "var(--text-muted)" }}>{article.publishedAt}</span>
                     </div>
 
-                    <h3 style={{ fontSize: "0.95rem", color: "#fff", fontWeight: "normal", lineHeight: "1.3" }}>
+                    <h3 style={{ fontSize: "1.1rem", color: "#fff", fontWeight: "normal", lineHeight: "1.35" }}>
                       {article.title}
                     </h3>
 
-                    <p style={{ fontSize: "0.78rem", color: "var(--text-muted)", lineBreak: "anywhere", overflow: "hidden", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical" }}>
-                      {article.summary}
-                    </p>
+                    {/* Show summary preview only if not expanded */}
+                    {!isSelected && (
+                      <p style={{ fontSize: "0.85rem", color: "var(--text-muted)", lineBreak: "anywhere", overflow: "hidden", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", lineHeight: "1.45" }}>
+                        {article.summary}
+                      </p>
+                    )}
+
+                    {/* Accordion Body: Full text expansion */}
+                    {isSelected && (
+                      <div 
+                        style={{ 
+                          marginTop: "8px", 
+                          paddingTop: "16px", 
+                          borderTop: "1px solid var(--border-accent)", 
+                          display: "flex", 
+                          flexDirection: "column", 
+                          gap: "16px",
+                          cursor: "default" 
+                        }}
+                        onClick={(e) => e.stopPropagation()} // Prevent close when interacting
+                      >
+                        {/* Meta badges */}
+                        <div style={{ display: "flex", gap: "20px", fontSize: "0.78rem", color: "var(--text-muted)" }}>
+                          <span style={{ display: "flex", alignItems: "center", gap: "5px" }}>
+                            <Clock size={13} style={{ color: "var(--accent)" }} />
+                            {article.readTime}
+                          </span>
+                          <span style={{ display: "flex", alignItems: "center", gap: "5px" }}>
+                            <User size={13} />
+                            {article.author || "ESPN FC Editor"}
+                          </span>
+                        </div>
+
+                        {/* Text paragraphs */}
+                        <div style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
+                          {[
+                            article.summary,
+                            `This story has generated significant interest among sports divisions globally. Team management is currently evaluating tactical impacts, while tournament organizers anticipate strong viewership as matches kick off.`,
+                            `Historical data indicates that these updates are vital for competitive balancing. Technical staff members are leveraging advanced telemetry systems to analyze gameplay shapes and provide data-driven insights to the squads.`,
+                            `Further reports are expected to emerge as the season continues. You can return to this news feed for dynamic hourly updates and live match commentary sync.`
+                          ].map((paragraph, idx) => (
+                            <p
+                              key={idx}
+                              style={{
+                                fontSize: "0.92rem",
+                                color: idx === 0 ? "#fff" : "var(--text-muted)",
+                                lineHeight: "1.65",
+                                fontWeight: idx === 0 ? "bold" : "normal",
+                                borderLeft: idx === 0 ? "3px solid var(--accent)" : "none",
+                                paddingLeft: idx === 0 ? "12px" : "0"
+                              }}
+                            >
+                              {paragraph}
+                            </p>
+                          ))}
+                        </div>
+
+                        {/* Visit Site Button */}
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", background: "rgba(0,0,0,0.15)", padding: "12px 16px", borderRadius: "4px", border: "1px solid rgba(255,255,255,0.03)", flexWrap: "wrap", gap: "10px", marginTop: "5px" }}>
+                          <div style={{ fontSize: "0.78rem", color: "var(--text-muted)" }}>
+                            Live editorial feed from official soccer networks.
+                          </div>
+                          <a
+                            href={article.link || "https://www.espn.com/soccer/"}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            style={{
+                              display: "flex",
+                              alignItems: "center",
+                              gap: "4px",
+                              color: "var(--accent)",
+                              textDecoration: "none",
+                              fontSize: "0.78rem",
+                              fontWeight: "bold",
+                              border: "1px solid var(--border-accent)",
+                              padding: "6px 14px",
+                              borderRadius: "3px",
+                              transition: "all 0.25s ease"
+                            }}
+                            className="read-more-link"
+                          >
+                            Visit ESPN FC
+                            <ChevronRight size={14} />
+                          </a>
+                        </div>
+                      </div>
+                    )}
                   </article>
                 );
               })
@@ -183,94 +256,6 @@ export function NewsClientPage({ channels }: NewsClientPageProps) {
             )}
           </div>
         </section>
-
-        {/* Right Column: Detailed Premium Article Reader */}
-        <main style={{ background: "var(--bg-panel-strong)", border: "1px solid var(--border-accent)", borderRadius: "4px", padding: "35px", overflowY: "auto", display: "flex", flexDirection: "column", gap: "25px" }} className="news-article-view">
-          {selectedArticle ? (
-            <>
-              {/* Category, Read Time, and Author badges */}
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "1px solid var(--border-accent)", paddingBottom: "15px" }}>
-                <span style={{ fontSize: "0.8rem", color: "var(--accent)", border: "1px solid var(--border-accent)", padding: "4px 10px", borderRadius: "3px", textTransform: "uppercase", letterSpacing: "0.08em" }}>
-                  {selectedArticle.category}
-                </span>
-
-                <div style={{ display: "flex", gap: "15px", fontSize: "0.8rem", color: "var(--text-muted)" }}>
-                  <span style={{ display: "flex", alignItems: "center", gap: "5px" }}>
-                    <Clock size={14} style={{ color: "var(--accent)" }} />
-                    {selectedArticle.readTime}
-                  </span>
-                  <span style={{ display: "flex", alignItems: "center", gap: "5px" }}>
-                    <User size={14} />
-                    {selectedArticle.author || "ESPN Editor"}
-                  </span>
-                </div>
-              </div>
-
-              {/* Title */}
-              <h2 style={{ fontSize: "2rem", color: "#fff", fontWeight: "400", lineHeight: "1.2", letterSpacing: "0.02em" }}>
-                {selectedArticle.title}
-              </h2>
-
-              <div style={{ fontSize: "0.8rem", color: "var(--text-muted)", marginTop: "-10px" }}>
-                Published: {selectedArticle.publishedAt} · FIFA Live Newsroom feed
-              </div>
-
-              {/* Text paragraphs */}
-              <div style={{ display: "flex", flexDirection: "column", gap: "18px", marginTop: "10px" }}>
-                {fullArticleText.map((paragraph, idx) => (
-                  <p
-                    key={idx}
-                    style={{
-                      fontSize: "0.95rem",
-                      color: idx === 0 ? "#f5f5f7" : "var(--text-muted)",
-                      lineHeight: "1.7",
-                      fontWeight: idx === 0 ? "bold" : "normal",
-                      borderLeft: idx === 0 ? "3px solid var(--accent)" : "none",
-                      paddingLeft: idx === 0 ? "15px" : "0"
-                    }}
-                  >
-                    {paragraph}
-                  </p>
-                ))}
-              </div>
-
-              {/* Read Original Article Link */}
-              <div style={{ marginTop: "20px", padding: "20px", background: "rgba(0,0,0,0.2)", borderRadius: "4px", border: "1px solid var(--border-muted)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                <div>
-                  <div style={{ fontSize: "0.85rem", color: "#fff" }}>Read full coverage on ESPN FC</div>
-                  <div style={{ fontSize: "0.75rem", color: "var(--text-muted)" }}>This feed is synchronized live from official ESPN soccer channels.</div>
-                </div>
-                <a
-                  href="https://www.espn.com/soccer/"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "6px",
-                    color: "var(--accent)",
-                    textDecoration: "none",
-                    fontSize: "0.85rem",
-                    fontWeight: "bold",
-                    border: "1px solid var(--border-accent)",
-                    padding: "8px 16px",
-                    borderRadius: "3px",
-                    transition: "all 0.25s ease"
-                  }}
-                  className="read-more-link"
-                >
-                  Visit ESPN
-                  <ChevronRight size={14} />
-                </a>
-              </div>
-            </>
-          ) : (
-            <div style={{ height: "100%", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", color: "var(--text-muted)" }}>
-              <Newspaper size={36} style={{ color: "var(--accent)", marginBottom: "12px" }} />
-              Select an article from the feed to begin reading.
-            </div>
-          )}
-        </main>
 
       </div>
     </DashboardLayout>

@@ -98,9 +98,13 @@ export async function GET() {
           else if (state === "post") status = "FINISHED";
           
           const time = comp.status?.type?.detail || comp.status?.type?.shortDetail || "TBD";
-          const tournament = event.season?.slug 
-            ? event.season.slug.replace(/-/g, " ").toUpperCase() 
-            : event.league?.name || "Global Match";
+          
+          const altNote = comp.altGameNote || "";
+          const tournament = altNote 
+            ? altNote.toUpperCase() 
+            : (event.season?.slug 
+                ? event.season.slug.replace(/-/g, " ").toUpperCase() 
+                : event.league?.name || "Global Match");
             
           const getStat = (compItem: any, statName: string) => {
             const statObj = compItem?.statistics?.find((s: any) => s.name === statName);
@@ -139,6 +143,45 @@ export async function GET() {
           const homeName = home.team?.displayName || "Home Team";
           const awayName = away.team?.displayName || "Away Team";
           
+          const homeTeamId = home.team?.id;
+          const awayTeamId = away.team?.id;
+          
+          const homeScorersList: string[] = [];
+          const awayScorersList: string[] = [];
+          
+          details.forEach((d: any) => {
+            const isGoal = d.type?.text?.toLowerCase().includes("goal") || d.scoringPlay;
+            if (isGoal && d.team?.id && d.clock?.displayValue) {
+              const athlete = d.athletesInvolved?.[0]?.displayName || "Unknown Player";
+              const timeStr = d.clock.displayValue;
+              const isOwnGoal = d.ownGoal || d.type?.text?.toLowerCase().includes("own goal");
+              const scorerText = isOwnGoal ? `${athlete} ${timeStr} (OG)` : `${athlete} ${timeStr}`;
+              
+              if (d.team.id === homeTeamId) {
+                homeScorersList.push(scorerText);
+              } else if (d.team.id === awayTeamId) {
+                awayScorersList.push(scorerText);
+              }
+            }
+          });
+          
+          const sortByTime = (arr: string[]) => {
+            return arr.sort((a, b) => {
+              const minA = parseInt(a.replace(/\D/g, "")) || 0;
+              const minB = parseInt(b.replace(/\D/g, "")) || 0;
+              return minA - minB;
+            });
+          };
+          
+          let parsedScorers = {
+            home: sortByTime(homeScorersList).join(", "),
+            away: sortByTime(awayScorersList).join(", ")
+          };
+          
+          if (!parsedScorers.home && !parsedScorers.away && (homeScore > 0 || awayScore > 0)) {
+            parsedScorers = generateScorers(homeName, awayName, homeScore, awayScore, status);
+          }
+          
           return {
             id: event.id || `espn-${Math.random().toString(36).substr(2, 9)}`,
             homeTeam: homeName,
@@ -160,7 +203,7 @@ export async function GET() {
                 ? [away.team.shortDisplayName + " GK", "CB 1", "CB 2", "LB", "RB", "CM 1", "CM 2", "AM", "LW", "RW", "ST"]
                 : lineupsFrance
             },
-            scorers: generateScorers(homeName, awayName, homeScore, awayScore, status)
+            scorers: parsedScorers
           };
         }).filter((m: any) => 
           m.tournament.toLowerCase().includes("world cup") || 

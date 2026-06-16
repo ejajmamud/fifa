@@ -133,7 +133,8 @@ export async function GET() {
       category: getCategory(item.title),
       publishedAt: getRelativeTime(item.pubDateStr),
       readTime: `${Math.max(3, Math.min(8, Math.ceil(item.title.split(" ").length / 22)))} min read`,
-      author: `${item.source} Editor`
+      author: `${item.source} Editor`,
+      link: item.link
     }));
     
     // Fallback breaking stories (if all feeds failed or are offline)
@@ -146,7 +147,8 @@ export async function GET() {
           category: "WORLD CUP",
           publishedAt: "15m ago",
           readTime: "4 min read",
-          author: "Sky Sports Editor"
+          author: "Sky Sports Editor",
+          link: "https://www.skysports.com/football"
         },
         {
           id: "sim-news-2",
@@ -155,7 +157,8 @@ export async function GET() {
           category: "SQUAD UPDATE",
           publishedAt: "1h ago",
           readTime: "5 min read",
-          author: "BBC Sport Editor"
+          author: "BBC Sport Editor",
+          link: "https://www.bbc.com/sport/football"
         },
         {
           id: "sim-news-3",
@@ -164,7 +167,8 @@ export async function GET() {
           category: "TACTICS",
           publishedAt: "3h ago",
           readTime: "7 min read",
-          author: "ESPN FC Editor"
+          author: "ESPN FC Editor",
+          link: "https://www.espn.com/soccer/"
         },
         {
           id: "sim-news-4",
@@ -173,7 +177,8 @@ export async function GET() {
           category: "WORLD CUP",
           publishedAt: "5h ago",
           readTime: "4 min read",
-          author: "FIFA Media Office"
+          author: "FIFA Media Office",
+          link: "https://www.fifa.com"
         },
         {
           id: "sim-news-5",
@@ -182,7 +187,8 @@ export async function GET() {
           category: "TRANSFERS",
           publishedAt: "8h ago",
           readTime: "6 min read",
-          author: "Transfer Market Analyst"
+          author: "Transfer Market Analyst",
+          link: "https://www.skysports.com/transfers"
         }
       ];
     }
