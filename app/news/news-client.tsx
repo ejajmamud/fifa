@@ -83,10 +83,10 @@ export function NewsClientPage({ channels }: NewsClientPageProps) {
       <div className="news-main-grid">
         
         {/* Single Column: News Feed list */}
-        <section style={{ display: "flex", flexDirection: "column", gap: "20px", overflow: "hidden", width: "100%" }}>
+        <section style={{ display: "flex", flexDirection: "column", gap: "20px", overflow: "hidden", width: "100%", height: "100%", minHeight: 0 }}>
           
           {/* Header search and refresh */}
-          <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
+          <div style={{ display: "flex", gap: "10px", alignItems: "center", flexShrink: 0 }}>
             <div className="search-container" style={{ margin: 0, flexGrow: 1 }}>
               <Search size={18} className="search-icon-svg" />
               <input
@@ -117,7 +117,7 @@ export function NewsClientPage({ channels }: NewsClientPageProps) {
           </div>
 
           {/* Categories Horizontal Scroll */}
-          <div className="groups-container" style={{ margin: 0, borderBottom: "1px solid var(--border-accent)", paddingBottom: "12px" }}>
+          <div className="groups-container" style={{ margin: 0, borderBottom: "1px solid var(--border-accent)", paddingBottom: "12px", flexShrink: 0 }}>
             {categories.map((cat) => (
               <button
                 key={cat}

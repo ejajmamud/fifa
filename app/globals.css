@@ -2082,3 +2082,9 @@ a, .nav-item, .mobile-nav-btn {
   }
 }
 
+@media (max-width: 640px) {
+  .news-subtitle-mobile-hide {
+    display: none !important;
+  }
+}
+

@@ -90,7 +90,17 @@ export function MatchesClientPage({ channels }: MatchesClientPageProps) {
 
   // Fallback static matches
   const mockMatches = useMemo(() => getLiveMatches(), []);
-  const matches = liveMatches.length > 0 ? liveMatches : mockMatches;
+  const matches = useMemo(() => {
+    if (liveMatches.length > 0) {
+      const hasUpcoming = liveMatches.some((m) => m.status === "UPCOMING");
+      if (!hasUpcoming) {
+        const mockUpcoming = mockMatches.filter((m) => m.status === "UPCOMING");
+        return [...liveMatches, ...mockUpcoming];
+      }
+      return liveMatches;
+    }
+    return mockMatches;
+  }, [liveMatches, mockMatches]);
 
   const [selectedMatchId, setSelectedMatchId] = useState<string>("");
 

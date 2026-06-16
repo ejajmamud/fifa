@@ -286,7 +286,9 @@ export function DashboardLayout({
         <header className="view-header">
           <div className="view-title-wrap">
             <h2>{header.title}</h2>
-            <p>{header.subtitle}</p>
+            <p className={header.subtitle === "Exclusive soccer updates and expert tactical studies" ? "news-subtitle-mobile-hide" : ""}>
+              {header.subtitle}
+            </p>
           </div>
           <div style={{ display: "flex", gap: "15px", alignItems: "center" }}>
             {channels.length > 0 && (
