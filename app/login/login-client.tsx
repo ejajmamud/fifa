@@ -133,7 +133,7 @@ export function LoginClientPage() {
             textTransform: "uppercase",
             letterSpacing: "0.06em"
           }}>
-            NASA Grade Secure Gateway
+            Secure Administrator Gateway
           </p>
         </div>
 

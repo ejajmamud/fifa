@@ -1,9 +1,9 @@
-- [ ] Implement cryptographic token helpers in `lib/auth.ts`
-- [ ] Create Next.js edge routing middleware in `middleware.ts`
-- [ ] Create `/api/admin/login` route for session start
-- [ ] Create `/api/admin/logout` route for session termination
-- [ ] Create `/login` route files (`app/login/page.tsx` and `app/login/login-client.tsx`)
-- [ ] Add logout button and handler in `app/admin/admin-client.tsx`
-- [ ] Run verification build `npm run build`
-- [ ] Git commit and push changes
-- [ ] Trigger VPS deployment and verify the live website login flow
+- [x] Implement cryptographic token helpers in `lib/auth.ts`
+- [x] Create Next.js edge routing middleware in `middleware.ts`
+- [x] Create `/api/admin/login` route for session start
+- [x] Create `/api/admin/logout` route for session termination
+- [x] Create `/login` route files (`app/login/page.tsx` and `app/login/login-client.tsx`)
+- [x] Add logout button and handler in `app/admin/admin-client.tsx`
+- [x] Run verification build `npm run build`
+- [x] Git commit and push changes
+- [x] Trigger VPS deployment and verify the live website login flow
