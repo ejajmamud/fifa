@@ -201,6 +201,13 @@ let channelsCache: {
 const CACHE_TTL = 5 * 60 * 1000; // 5 minutes cache
 let isRefreshing = false;
 
+function getForcedTopRank(name: string, url: string): number {
+  const n = name.toLowerCase();
+  if (n === "dsports" && url.includes("A008")) return 1;
+  if (n === "tyc sports arg" && url.includes("stream/84")) return 2;
+  return 999;
+}
+
 async function refreshCacheInBackground() {
   if (isRefreshing) return;
   isRefreshing = true;
@@ -260,8 +267,12 @@ async function refreshCacheInBackground() {
     // Validate all streams in parallel batches
     const validated = await validateAllStreams(rawChannels);
 
-    // Sort: working first, then by latency (smaller is better)
+    // Sort: forced-top channels first, then working first, then by latency (smaller is better)
     validated.sort((a, b) => {
+      const rankA = getForcedTopRank(a.name, a.url);
+      const rankB = getForcedTopRank(b.name, b.url);
+      if (rankA !== rankB) return rankA - rankB;
+
       if (a.working && !b.working) return -1;
       if (!a.working && b.working) return 1;
       return a.latency - b.latency;
