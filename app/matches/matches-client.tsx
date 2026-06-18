@@ -88,19 +88,7 @@ export function MatchesClientPage({ channels }: MatchesClientPageProps) {
   const [filter, setFilter] = useState<"ALL" | "LIVE" | "UPCOMING" | "FINISHED">("ALL");
   const [isRefreshing, setIsRefreshing] = useState(false);
 
-  // Fallback static matches
-  const mockMatches = useMemo(() => getLiveMatches(), []);
-  const matches = useMemo(() => {
-    if (liveMatches.length > 0) {
-      const hasUpcoming = liveMatches.some((m) => m.status === "UPCOMING");
-      if (!hasUpcoming) {
-        const mockUpcoming = mockMatches.filter((m) => m.status === "UPCOMING");
-        return [...liveMatches, ...mockUpcoming];
-      }
-      return liveMatches;
-    }
-    return mockMatches;
-  }, [liveMatches, mockMatches]);
+  const matches = liveMatches;
 
   const [selectedMatchId, setSelectedMatchId] = useState<string>("");
 
