@@ -280,26 +280,7 @@ export function TvExperience({ channels }: TvExperienceProps) {
     }
   }, [chatMessages]);
 
-  // Simulated Chat commentary
-  useEffect(() => {
-    const chatInterval = setInterval(() => {
-      const randomComment = mockComments[Math.floor(Math.random() * mockComments.length)];
-      const pundits = ["Coach Harrison", "Analyst Sarah", "Dominic Thorne", "Pundit Roy"];
-      const randomPundit = pundits[Math.floor(Math.random() * pundits.length)];
-
-      setChatMessages((prev) => [
-        ...prev.slice(-30),
-        {
-          id: `sim-${Date.now()}`,
-          username: randomPundit,
-          message: randomComment,
-          role: "pundit"
-        }
-      ]);
-    }, 6000);
-
-    return () => clearInterval(chatInterval);
-  }, []);
+  // Pundit commentary generation disabled (fake commentary removed)
 
   // Sync Tuner Filters to localstorage
   useEffect(() => {

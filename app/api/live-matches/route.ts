@@ -78,7 +78,7 @@ export async function GET() {
     
     // Attempt to fetch from ESPN Live Scoreboard API
     try {
-      const res = await fetch("https://site.api.espn.com/apis/site/v2/sports/soccer/all/scoreboard", {
+      const res = await fetch("https://site.api.espn.com/apis/site/v2/sports/soccer/fifa.world/scoreboard", {
         next: { revalidate: 10 } // short cache for high-fidelity updates
       });
       
@@ -186,6 +186,8 @@ export async function GET() {
             id: event.id || `espn-${Math.random().toString(36).substr(2, 9)}`,
             homeTeam: homeName,
             awayTeam: awayName,
+            homeTeamId,
+            awayTeamId,
             homeScore,
             awayScore,
             status,
