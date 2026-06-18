@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 import {
   Plus,
   Edit2,
@@ -70,6 +71,7 @@ function isSports(name: string): boolean {
 }
 
 export function AdminClientPage({ initialChannels }: AdminClientPageProps) {
+  const router = useRouter();
   const [activeTab, setActiveTab] = useState<"METRICS" | "CHANNELS" | "IMPORT" | "SETTINGS" | "LOGS">("METRICS");
 
   // Channels state
@@ -389,6 +391,19 @@ export function AdminClientPage({ initialChannels }: AdminClientPageProps) {
       });
   };
 
+  const handleLogout = async () => {
+    if (!confirm("Are you sure you want to sign out from the broadcast control console?")) return;
+    try {
+      const res = await fetch("/api/admin/logout", { method: "POST" });
+      if (res.ok) {
+        router.push("/login");
+        router.refresh();
+      }
+    } catch (err) {
+      console.error("Logout error:", err);
+    }
+  };
+
   // Add/remove priority channel sorting rules
   const handleAddRule = () => {
     setSettings(prev => ({
@@ -554,14 +569,15 @@ export function AdminClientPage({ initialChannels }: AdminClientPageProps) {
       <div style={{ display: "flex", flexDirection: "column", gap: "25px", width: "100%" }}>
         
         {/* Navigation Tabs */}
-        <div style={{ display: "flex", gap: "20px", borderBottom: "1px solid rgba(255, 255, 255, 0.08)", paddingBottom: "2px", margin: "0 0 10px 0" }}>
-          {([
-            { id: "METRICS", label: "System Metrics" },
-            { id: "CHANNELS", label: "M3U Channels Editor" },
-            { id: "IMPORT", label: "EPG Playlist Importer" },
-            { id: "SETTINGS", label: "Dashboard Variables" },
-            { id: "LOGS", label: "Process Diagnostics" }
-          ] as const).map(t => (
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "1px solid rgba(255, 255, 255, 0.08)", paddingBottom: "2px", margin: "0 0 10px 0" }}>
+          <div style={{ display: "flex", gap: "20px" }}>
+            {([
+              { id: "METRICS", label: "System Metrics" },
+              { id: "CHANNELS", label: "M3U Channels Editor" },
+              { id: "IMPORT", label: "EPG Playlist Importer" },
+              { id: "SETTINGS", label: "Dashboard Variables" },
+              { id: "LOGS", label: "Process Diagnostics" }
+            ] as const).map(t => (
             <button
               key={t.id}
               onClick={() => setActiveTab(t.id)}
@@ -582,6 +598,32 @@ export function AdminClientPage({ initialChannels }: AdminClientPageProps) {
               {t.label}
             </button>
           ))}
+          </div>
+
+          <button
+            onClick={handleLogout}
+            style={{
+              padding: "8px 16px",
+              background: "rgba(239, 68, 68, 0.08)",
+              border: "1px solid rgba(239, 68, 68, 0.2)",
+              borderRadius: "3px",
+              color: "#ef4444",
+              fontSize: "0.75rem",
+              fontWeight: "bold",
+              cursor: "pointer",
+              transition: "all 0.2s"
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = "rgba(239, 68, 68, 0.15)";
+              e.currentTarget.style.borderColor = "#ef4444";
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = "rgba(239, 68, 68, 0.08)";
+              e.currentTarget.style.borderColor = "rgba(239, 68, 68, 0.2)";
+            }}
+          >
+            Sign Out
+          </button>
         </div>
 
         {/* Tab 1: System Metrics & Stats Dashboard */}
