@@ -199,6 +199,92 @@ let channelsCache: {
 } | null = null;
 
 const CACHE_TTL = 5 * 60 * 1000; // 5 minutes cache
+let isRefreshing = false;
+
+async function refreshCacheInBackground() {
+  if (isRefreshing) return;
+  isRefreshing = true;
+  try {
+    const playlistPath = path.join(process.cwd(), PLAYLIST_FILE);
+    const playlist = await fs.readFile(playlistPath, "utf8");
+    const lines = playlist
+      .split(/\r?\n/)
+      .map((line) => line.trim())
+      .filter(Boolean);
+
+    const rawChannels: Omit<Channel, "epg" | "working" | "latency">[] = [];
+    let currentInfo: string | undefined;
+
+    for (const line of lines) {
+      if (line.startsWith("#EXTINF")) {
+        currentInfo = line;
+        continue;
+      }
+
+      if (line.startsWith("#")) {
+        continue;
+      }
+
+      if (!currentInfo || !/^https?:\/\//i.test(line)) {
+        continue;
+      }
+
+      const metadata = currentInfo.replace(/^#EXTINF:-?\d+\s*/i, "");
+      const attributes = parseAttributes(metadata);
+      const [, fallbackName = "Untitled channel"] = metadata.match(/,(.*)$/) ?? [];
+      
+      const rawName = attributes["tvg-name"] || fallbackName;
+      const country = inferCountry(rawName);
+      
+      const name = cleanName(rawName);
+      const group = inferGroup(name, attributes["group-title"]);
+      const url = line;
+      const parsedUrl = new URL(url);
+      const id = `${hash(`${name}-${url}`)}-${rawChannels.length + 1}`;
+
+      rawChannels.push({
+        id,
+        number: rawChannels.length + 1,
+        name,
+        url,
+        group,
+        country,
+        quality: inferQuality(name, url),
+        logo: attributes["tvg-logo"],
+        host: parsedUrl.hostname.replace(/^www\./, "")
+      });
+
+      currentInfo = undefined;
+    }
+
+    // Validate all streams in parallel batches
+    const validated = await validateAllStreams(rawChannels);
+
+    // Sort: working first, then by latency (smaller is better)
+    validated.sort((a, b) => {
+      if (a.working && !b.working) return -1;
+      if (!a.working && b.working) return 1;
+      return a.latency - b.latency;
+    });
+
+    // Re-number and add EPG schedules
+    const finalChannels = validated.map((c, idx) => ({
+      ...c,
+      number: idx + 1,
+      epg: generateEPG(c.name, c.id)
+    }));
+
+    channelsCache = {
+      timestamp: Date.now(),
+      channels: finalChannels
+    };
+    console.log(`[PLAYLIST] Cache successfully refreshed in background with ${finalChannels.length} channels.`);
+  } catch (err) {
+    console.error("[PLAYLIST] Error refreshing cache in background:", err);
+  } finally {
+    isRefreshing = false;
+  }
+}
 
 async function checkStreamStatus(url: string): Promise<{ working: boolean; latency: number }> {
   const startTime = Date.now();
@@ -242,83 +328,88 @@ async function validateAllStreams(rawChannels: Omit<Channel, "epg" | "working" |
 
 export async function getPlaylist(): Promise<Channel[]> {
   const now = Date.now();
-  if (channelsCache && (now - channelsCache.timestamp < CACHE_TTL)) {
-    return channelsCache.channels;
+
+  // If cache is empty, build a fast placeholder playlist immediately and trigger background check
+  if (!channelsCache) {
+    try {
+      const playlistPath = path.join(process.cwd(), PLAYLIST_FILE);
+      const playlist = await fs.readFile(playlistPath, "utf8");
+      const lines = playlist
+        .split(/\r?\n/)
+        .map((line) => line.trim())
+        .filter(Boolean);
+
+      const rawChannels: Channel[] = [];
+      let currentInfo: string | undefined;
+
+      for (const line of lines) {
+        if (line.startsWith("#EXTINF")) {
+          currentInfo = line;
+          continue;
+        }
+
+        if (line.startsWith("#")) {
+          continue;
+        }
+
+        if (!currentInfo || !/^https?:\/\//i.test(line)) {
+          continue;
+        }
+
+        const metadata = currentInfo.replace(/^#EXTINF:-?\d+\s*/i, "");
+        const attributes = parseAttributes(metadata);
+        const [, fallbackName = "Untitled channel"] = metadata.match(/,(.*)$/) ?? [];
+        
+        const rawName = attributes["tvg-name"] || fallbackName;
+        const country = inferCountry(rawName);
+        
+        const name = cleanName(rawName);
+        const group = inferGroup(name, attributes["group-title"]);
+        const url = line;
+        const parsedUrl = new URL(url);
+        const id = `${hash(`${name}-${url}`)}-${rawChannels.length + 1}`;
+
+        rawChannels.push({
+          id,
+          number: rawChannels.length + 1,
+          name,
+          url,
+          group,
+          country,
+          quality: inferQuality(name, url),
+          logo: attributes["tvg-logo"],
+          host: parsedUrl.hostname.replace(/^www\./, ""),
+          working: true,
+          latency: 100,
+          epg: []
+        });
+
+        currentInfo = undefined;
+      }
+
+      const initialChannels = rawChannels.map((c, idx) => ({
+        ...c,
+        number: idx + 1,
+        epg: generateEPG(c.name, c.id)
+      }));
+
+      channelsCache = {
+        timestamp: now,
+        channels: initialChannels
+      };
+      
+      // Trigger background validation immediately
+      refreshCacheInBackground();
+    } catch (err) {
+      console.error("[PLAYLIST] Failed to build initial cold cache:", err);
+      return [];
+    }
   }
 
-  const playlistPath = path.join(process.cwd(), PLAYLIST_FILE);
-  const playlist = await fs.readFile(playlistPath, "utf8");
-  const lines = playlist
-    .split(/\r?\n/)
-    .map((line) => line.trim())
-    .filter(Boolean);
-
-  const rawChannels: Omit<Channel, "epg" | "working" | "latency">[] = [];
-  let currentInfo: string | undefined;
-
-  for (const line of lines) {
-    if (line.startsWith("#EXTINF")) {
-      currentInfo = line;
-      continue;
-    }
-
-    if (line.startsWith("#")) {
-      continue;
-    }
-
-    if (!currentInfo || !/^https?:\/\//i.test(line)) {
-      continue;
-    }
-
-    const metadata = currentInfo.replace(/^#EXTINF:-?\d+\s*/i, "");
-    const attributes = parseAttributes(metadata);
-    const [, fallbackName = "Untitled channel"] = metadata.match(/,(.*)$/) ?? [];
-    
-    const rawName = attributes["tvg-name"] || fallbackName;
-    const country = inferCountry(rawName);
-    
-    const name = cleanName(rawName);
-    const group = inferGroup(name, attributes["group-title"]);
-    const url = line;
-    const parsedUrl = new URL(url);
-    const id = `${hash(`${name}-${url}`)}-${rawChannels.length + 1}`;
-
-    rawChannels.push({
-      id,
-      number: rawChannels.length + 1,
-      name,
-      url,
-      group,
-      country,
-      quality: inferQuality(name, url),
-      logo: attributes["tvg-logo"],
-      host: parsedUrl.hostname.replace(/^www\./, "")
-    });
-
-    currentInfo = undefined;
+  // If cache is expired, trigger validation check in background (non-blocking)
+  if (now - channelsCache.timestamp > CACHE_TTL) {
+    refreshCacheInBackground();
   }
 
-  // Validate all streams in parallel batches
-  const validated = await validateAllStreams(rawChannels);
-
-  // Sort: working first, then by latency (smaller is better)
-  validated.sort((a, b) => {
-    if (a.working && !b.working) return -1;
-    if (!a.working && b.working) return 1;
-    return a.latency - b.latency;
-  });
-
-  // Re-number and add EPG schedules
-  const finalChannels = validated.map((c, idx) => ({
-    ...c,
-    number: idx + 1,
-    epg: generateEPG(c.name, c.id)
-  }));
-
-  channelsCache = {
-    timestamp: now,
-    channels: finalChannels
-  };
-
-  return finalChannels;
+  return channelsCache.channels;
 }
