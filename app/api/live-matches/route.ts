@@ -78,7 +78,7 @@ export async function GET() {
     
     // Attempt to fetch from ESPN Live Scoreboard API
     try {
-      const res = await fetch("https://site.api.espn.com/apis/site/v2/sports/soccer/fifa.world/scoreboard", {
+      const res = await fetch("https://site.api.espn.com/apis/site/v2/sports/soccer/fifa.world/scoreboard?dates=20260601-20260731", {
         next: { revalidate: 10 } // short cache for high-fidelity updates
       });
       

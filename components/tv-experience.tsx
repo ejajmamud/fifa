@@ -13,7 +13,8 @@ import {
   Sliders,
   Clock,
   Search,
-  Send
+  Send,
+  Activity
 } from "lucide-react";
 import {
   Channel,
@@ -673,7 +674,12 @@ export function TvExperience({ channels }: TvExperienceProps) {
                 <article
                   key={c.id}
                   className={`channel-list-card ${activeChannelId === c.id ? "active" : ""}`}
-                  onClick={() => setActiveChannelId(c.id)}
+                  onClick={() => {
+                    setActiveChannelId(c.id);
+                    if (videoRef.current) {
+                      videoRef.current.play().catch(() => undefined);
+                    }
+                  }}
                 >
                   <span className="channel-card-number">{c.number.toString().padStart(3, "0")}</span>
                   <div className="channel-card-logo-placeholder">
@@ -833,11 +839,6 @@ export function TvExperience({ channels }: TvExperienceProps) {
                   </p>
                 </div>
                 <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
-                  {sleepTimer > 0 && (
-                    <span style={{ fontSize: "0.75rem", color: "var(--accent)", border: "1px solid var(--border-accent)", padding: "4px 8px", borderRadius: "2px", background: "rgba(0,0,0,0.6)" }}>
-                      Sleep: {formatSleepSeconds(sleepSecondsLeft)}
-                    </span>
-                  )}
                   <span className="chrome-badge">Live</span>
                 </div>
               </div>
@@ -898,7 +899,7 @@ export function TvExperience({ channels }: TvExperienceProps) {
                     onClick={() => setShowStatsForNerds((p) => !p)}
                     title="Stats for Nerds (I)"
                   >
-                    <Clock size={18} />
+                    <Activity size={18} />
                   </button>
 
                   {/* Dual Stream trigger */}
@@ -927,6 +928,12 @@ export function TvExperience({ channels }: TvExperienceProps) {
                 </div>
               </div>
             </div>
+          </div>
+
+          {/* Audio Equalizer Visualizer (Stream Beam) */}
+          <div className="audio-visualizer-section" style={{ margin: "15px 0 0 0", background: "rgba(0,0,0,0.4)" }}>
+            <span className="visualizer-label">High-Fidelity Audio Stream Beam</span>
+            <canvas ref={canvasRef} className="visualizer-canvas" style={{ height: "45px" }} />
           </div>
 
           {/* Video Tuner Control Box */}
@@ -988,70 +995,6 @@ export function TvExperience({ channels }: TvExperienceProps) {
             </div>
           )}
 
-          {/* Sleep Timer Settings Strip */}
-          <div style={{ marginTop: "15px", padding: "15px", background: "var(--bg-panel)", border: "1px solid var(--border-accent)", borderRadius: "4px", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "10px" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-              <Clock size={16} style={{ color: "var(--accent)" }} />
-              <span style={{ fontSize: "0.8rem", color: "var(--text-primary)" }}>Broadcast Sleep Timer</span>
-            </div>
-            <div style={{ display: "flex", gap: "8px" }}>
-              {[0, 5, 15, 30, 60].map((mins) => (
-                <button
-                  key={mins}
-                  onClick={() => setSleepTimer(mins)}
-                  style={{
-                    padding: "6px 12px",
-                    background: sleepTimer === mins ? "rgba(197,168,92,0.15)" : "rgba(255,255,255,0.02)",
-                    border: "1px solid",
-                    borderColor: sleepTimer === mins ? "var(--accent)" : "var(--border-muted)",
-                    color: sleepTimer === mins ? "var(--accent)" : "var(--text-muted)",
-                    borderRadius: "3px",
-                    fontSize: "0.75rem",
-                    cursor: "pointer",
-                    transition: "all 0.25s ease"
-                  }}
-                >
-                  {mins === 0 ? "Off" : `${mins} min`}
-                </button>
-              ))}
-            </div>
-          </div>
-        </section>
-
-        {/* Right Column: Audio Equalizer Visualizer & Commentary Chat */}
-        <section className="live-chat-panel" aria-label="Audience and pundit chatter">
-          <div className="audio-visualizer-section">
-            <span className="visualizer-label">High-Fidelity Audio Stream Beam</span>
-            <canvas ref={canvasRef} className="visualizer-canvas" />
-          </div>
-
-          <div className="chat-section-header">VIP Broadcast Commentary</div>
-          
-          <div ref={chatContainerRef} className="chat-history-scroll">
-            {chatMessages.map((msg) => (
-              <div key={msg.id} className={`chat-bubble ${msg.role}`}>
-                <div className="chat-bubble-user">
-                  <span>{msg.username}</span>
-                  <span className={`role-badge ${msg.role}`}>{msg.role}</span>
-                </div>
-                <div className="chat-bubble-text">{msg.message}</div>
-              </div>
-            ))}
-            <div ref={chatEndRef} />
-          </div>
-
-          <form onSubmit={handleSendChat} className="chat-input-bar">
-            <input
-              type="text"
-              placeholder="Send fan message..."
-              className="chat-input-field"
-              value={chatInput}
-              onChange={(e) => setChatInput(e.target.value)}
-            />
-            <button type="submit" className="chat-send-btn" title="Send message">
-              <Send size={15} />
-            </button>
-          </form>
         </section>
       </div>
     </DashboardLayout>

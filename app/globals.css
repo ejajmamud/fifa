@@ -211,7 +211,7 @@ html, body {
 /* 3-Panel Desktop Layout */
 .live-tv-grid {
   display: grid;
-  grid-template-columns: 320px 1fr 340px;
+  grid-template-columns: 360px 1fr;
   gap: 24px;
   flex-grow: 1;
   min-height: 0;
@@ -1806,7 +1806,7 @@ html, body {
 /* WIDESCREENS & PROJECTORS */
 @media (min-width: 1600px) {
   .live-tv-grid {
-    grid-template-columns: 340px 1fr 380px;
+    grid-template-columns: 400px 1fr;
     gap: 30px;
   }
 }
