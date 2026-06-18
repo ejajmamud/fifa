@@ -83,6 +83,29 @@ const getTeamFlag = (teamName: string) => {
   return null;
 };
 
+const formatMatchTime = (match: Match) => {
+  if (match.status === "LIVE") return `LIVE ${match.time}`;
+  if (match.status === "FINISHED") return `FINISHED · ${match.time || "FT"}`;
+  
+  if (match.date) {
+    try {
+      const d = new Date(match.date);
+      if (!isNaN(d.getTime())) {
+        return d.toLocaleString(undefined, {
+          weekday: "short",
+          month: "short",
+          day: "numeric",
+          hour: "2-digit",
+          minute: "2-digit"
+        });
+      }
+    } catch (e) {
+      // Fallback
+    }
+  }
+  return `UPCOMING ${match.time ? `· ${match.time}` : ""}`;
+};
+
 export function MatchesClientPage({ channels }: MatchesClientPageProps) {
   // Navigation Tabs
   const [activeTab, setActiveTab] = useState<"SCOREBOARD" | "STANDINGS" | "TEAMS">("SCOREBOARD");
@@ -424,10 +447,10 @@ export function MatchesClientPage({ channels }: MatchesClientPageProps) {
                 {isLive ? (
                   <span style={{ color: "#ef4444", display: "flex", alignItems: "center", gap: "4px", fontWeight: "bold" }}>
                     <span className="live-pulse-dot" />
-                    LIVE {match.time}
+                    {formatMatchTime(match)}
                   </span>
                 ) : (
-                  <span>{match.status} {match.time && `· ${match.time}`}</span>
+                  <span>{formatMatchTime(match)}</span>
                 )}
               </div>
 
@@ -599,11 +622,11 @@ export function MatchesClientPage({ channels }: MatchesClientPageProps) {
                         </div>
                         {selectedMatch.status === "LIVE" ? (
                           <span style={{ color: "#ef4444", fontSize: "0.75rem", textTransform: "uppercase", fontWeight: "bold", display: "flex", alignItems: "center", gap: "4px" }}>
-                            <span className="live-pulse-dot" /> LIVE {selectedMatch.time}
+                            <span className="live-pulse-dot" /> {formatMatchTime(selectedMatch)}
                           </span>
                         ) : (
                           <span style={{ color: "var(--text-muted)", fontSize: "0.75rem", textTransform: "uppercase" }}>
-                            {selectedMatch.status}
+                            {formatMatchTime(selectedMatch)}
                           </span>
                         )}
                       </div>

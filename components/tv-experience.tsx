@@ -26,12 +26,6 @@ type TvExperienceProps = {
   channels: Channel[];
 };
 
-type ChatMessage = {
-  id: string;
-  username: string;
-  message: string;
-  role: "pundit" | "fan";
-};
 
 const storageKeys = {
   favorites: "emjsports:favorites",
@@ -66,11 +60,7 @@ export function TvExperience({ channels }: TvExperienceProps) {
   const [goldTint, setGoldTint] = useState(0);
   const [showTuner, setShowTuner] = useState(false);
 
-  // Sleep Timer
-  const [sleepTimer, setSleepTimer] = useState(0); // in minutes, 0 = disabled
-  const [sleepSecondsLeft, setSleepSecondsLeft] = useState(0);
-  const [isSleeping, setIsSleeping] = useState(false);
-  const sleepTimerRef = useRef<number | undefined>(undefined);
+
 
   // App Config Settings
   const [bufferDelay, setBufferDelay] = useState(5);
@@ -97,15 +87,7 @@ export function TvExperience({ channels }: TvExperienceProps) {
     latency: "0.0s"
   });
 
-  // Chat comments feed
-  const [chatMessages, setChatMessages] = useState<ChatMessage[]>([
-    { id: "c1", username: "Analyst Roy", message: "Welcome to EMJ Sports Live TV.", role: "pundit" },
-    { id: "c2", username: "Tactical Javier", message: "Server-side stream proxying active to bypass Mixed Content blocks.", role: "pundit" },
-    { id: "c3", username: "Pundit Emma", message: "You can load two streams side-by-side using Dual Stream.", role: "pundit" }
-  ]);
-  const [chatInput, setChatInput] = useState("");
-  const chatEndRef = useRef<HTMLDivElement | null>(null);
-  const chatContainerRef = useRef<HTMLDivElement | null>(null);
+
 
   // Active channel compute
   const activeChannel = useMemo(
@@ -273,13 +255,7 @@ export function TvExperience({ channels }: TvExperienceProps) {
     }
   }, []);
 
-  // Chat scroll container to bottom
-  useEffect(() => {
-    const container = chatContainerRef.current;
-    if (container) {
-      container.scrollTop = container.scrollHeight;
-    }
-  }, [chatMessages]);
+
 
   // Pundit commentary generation disabled (fake commentary removed)
 
@@ -291,36 +267,7 @@ export function TvExperience({ channels }: TvExperienceProps) {
     localStorage.setItem(storageKeys.goldTint, goldTint.toString());
   }, [brightness, contrast, saturation, goldTint]);
 
-  // Sleep Timer Counter
-  useEffect(() => {
-    if (sleepTimer === 0) {
-      if (sleepTimerRef.current) clearInterval(sleepTimerRef.current);
-      setSleepSecondsLeft(0);
-      return;
-    }
 
-    setSleepSecondsLeft(sleepTimer * 60);
-    if (sleepTimerRef.current) clearInterval(sleepTimerRef.current);
-
-    sleepTimerRef.current = window.setInterval(() => {
-      setSleepSecondsLeft((prev) => {
-        if (prev <= 1) {
-          clearInterval(sleepTimerRef.current);
-          if (videoRef.current) {
-            videoRef.current.pause();
-          }
-          setIsSleeping(true);
-          setSleepTimer(0);
-          return 0;
-        }
-        return prev - 1;
-      });
-    }, 1000);
-
-    return () => {
-      if (sleepTimerRef.current) clearInterval(sleepTimerRef.current);
-    };
-  }, [sleepTimer]);
 
   // Audio Equalizer Canvas Animator
   useEffect(() => {
@@ -350,7 +297,7 @@ export function TvExperience({ channels }: TvExperienceProps) {
 
     const draw = () => {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
-      const isPlaying = videoRef.current && !videoRef.current.paused && !isSleeping;
+      const isPlaying = videoRef.current && !videoRef.current.paused;
       const volMultiplier = isMuted ? 0 : volume;
       
       for (let i = 0; i < barCount; i++) {
@@ -384,7 +331,7 @@ export function TvExperience({ channels }: TvExperienceProps) {
       cancelAnimationFrame(animationId);
       window.removeEventListener("resize", resizeCanvas);
     };
-  }, [isMuted, volume, isSleeping]);
+  }, [isMuted, volume]);
 
   // HLS Stream Proxy Rewriter
   const getStreamUrl = (url: string) => {
@@ -401,7 +348,6 @@ export function TvExperience({ channels }: TvExperienceProps) {
     const video = videoRef.current;
     setIsLoading(true);
     setPlayError("");
-    setIsSleeping(false);
     
     if (hlsRef.current) {
       hlsRef.current.destroy();
@@ -589,27 +535,7 @@ export function TvExperience({ channels }: TvExperienceProps) {
     localStorage.setItem(storageKeys.favorites, JSON.stringify(nextFavs));
   };
 
-  const handleSendChat = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!chatInput.trim()) return;
 
-    setChatMessages((prev) => [
-      ...prev,
-      {
-        id: `user-${Date.now()}`,
-        username: "VIP Guest",
-        message: chatInput.trim(),
-        role: "fan"
-      }
-    ]);
-    setChatInput("");
-  };
-
-  const formatSleepSeconds = (secs: number) => {
-    const m = Math.floor(secs / 60);
-    const s = secs % 60;
-    return `${m}:${s.toString().padStart(2, "0")}`;
-  };
 
   return (
     <DashboardLayout channels={channels}>
@@ -677,7 +603,15 @@ export function TvExperience({ channels }: TvExperienceProps) {
                   onClick={() => {
                     setActiveChannelId(c.id);
                     if (videoRef.current) {
-                      videoRef.current.play().catch(() => undefined);
+                      const playPromise = videoRef.current.play();
+                      if (playPromise !== undefined) {
+                        playPromise.catch(() => {
+                          if (videoRef.current) {
+                            videoRef.current.muted = true;
+                            videoRef.current.play().catch(() => undefined);
+                          }
+                        });
+                      }
                     }
                   }}
                 >
@@ -726,6 +660,7 @@ export function TvExperience({ channels }: TvExperienceProps) {
                 ref={videoRef}
                 className={`player-video-element aspect-${aspectRatio}`}
                 playsInline
+                autoPlay
                 onClick={(e) => {
                   e.preventDefault();
                   if (videoRef.current) {
@@ -750,6 +685,7 @@ export function TvExperience({ channels }: TvExperienceProps) {
                   ref={videoRef2}
                   className={`player-video-element aspect-${aspectRatio}`}
                   playsInline
+                  autoPlay
                   onClick={(e) => {
                     e.preventDefault();
                     if (videoRef2.current) {
@@ -767,16 +703,7 @@ export function TvExperience({ channels }: TvExperienceProps) {
               </div>
             )}
 
-            {/* Sleep Mode Overlay */}
-            {isSleeping && (
-              <div className="sleep-mode-overlay">
-                <span className="sleep-overlay-title">Sleep Timer Expired</span>
-                <p style={{ color: "var(--text-muted)", fontSize: "0.95rem" }}>The broadcast has been paused automatically.</p>
-                <button className="sleep-overlay-btn" onClick={() => { setIsSleeping(false); videoRef.current?.play().catch(() => undefined); }}>
-                  Wake Up Player
-                </button>
-              </div>
-            )}
+
 
             {/* Loading state */}
             {isLoading && (

@@ -78,7 +78,7 @@ export async function GET() {
     
     // Attempt to fetch from ESPN Live Scoreboard API
     try {
-      const res = await fetch("https://site.api.espn.com/apis/site/v2/sports/soccer/fifa.world/scoreboard?dates=20260601-20260731", {
+      const res = await fetch("https://site.api.espn.com/apis/site/v2/sports/soccer/fifa.world/scoreboard?dates=20260601-20260731&limit=200", {
         next: { revalidate: 10 } // short cache for high-fidelity updates
       });
       
@@ -192,7 +192,8 @@ export async function GET() {
             awayScore,
             status,
             time,
-            tournament,
+            date: event.date,
+            tournament: tournament,
             possession,
             shots,
             yellowCards,
@@ -207,6 +208,13 @@ export async function GET() {
             },
             scorers: parsedScorers
           };
+        });
+        
+        // Sort matches chronologically by date
+        matches.sort((a: any, b: any) => {
+          const ad = a.date ? new Date(a.date).getTime() : 0;
+          const bd = b.date ? new Date(b.date).getTime() : 0;
+          return ad - bd;
         });
       }
     } catch (apiError) {

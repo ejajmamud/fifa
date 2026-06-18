@@ -211,7 +211,7 @@ html, body {
 /* 3-Panel Desktop Layout */
 .live-tv-grid {
   display: grid;
-  grid-template-columns: 360px 1fr;
+  grid-template-columns: 400px 1fr;
   gap: 24px;
   flex-grow: 1;
   min-height: 0;
@@ -743,44 +743,7 @@ html, body {
   display: block;
 }
 
-/* Sleep Timer Overlay */
-.sleep-mode-overlay {
-  position: absolute;
-  inset: 0;
-  background: rgba(2, 2, 3, 0.96);
-  z-index: 40;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 20px;
-  text-align: center;
-}
 
-.sleep-overlay-title {
-  font-size: 2.2rem;
-  color: var(--accent);
-  text-shadow: var(--glow);
-  text-transform: uppercase;
-}
-
-.sleep-overlay-btn {
-  background: var(--accent);
-  border: none;
-  padding: 12px 24px;
-  color: var(--bg-obsidian);
-  border-radius: 4px;
-  font-size: 0.9rem;
-  cursor: pointer;
-  font-weight: bold;
-  text-transform: uppercase;
-  transition: all 0.2s ease;
-}
-
-.sleep-overlay-btn:hover {
-  background: var(--accent-hover);
-  box-shadow: var(--glow);
-}
 
 /* Right Detail & Interaction Panel */
 /* Right Detail & Interaction Panel */
@@ -1806,7 +1769,7 @@ html, body {
 /* WIDESCREENS & PROJECTORS */
 @media (min-width: 1600px) {
   .live-tv-grid {
-    grid-template-columns: 400px 1fr;
+    grid-template-columns: 440px 1fr;
     gap: 30px;
   }
 }

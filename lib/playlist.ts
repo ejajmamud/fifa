@@ -30,6 +30,7 @@ export type Match = {
   awayScore: number;
   status: "LIVE" | "UPCOMING" | "FINISHED";
   time: string;
+  date?: string;
   tournament: string;
   possession: [number, number];
   shots: [number, number];
