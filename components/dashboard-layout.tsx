@@ -9,7 +9,8 @@ import {
   Trophy,
   Newspaper,
   Settings as SettingsIcon,
-  LayoutGrid
+  LayoutGrid,
+  Shield
 } from "lucide-react";
 import { Channel } from "@/lib/playlist";
 
@@ -169,6 +170,11 @@ export function DashboardLayout({
           title: "Platform Settings",
           subtitle: "Tuning latency, aesthetic accents, and hotkey guidelines"
         };
+      case "/admin":
+        return {
+          title: "Trillion-Dollar Admin Panel",
+          subtitle: "Persistently tune M3U channels, harvest playlists, and priority lists"
+        };
       default:
         return {
           title: "EMJ Sports",
@@ -250,6 +256,10 @@ export function DashboardLayout({
             <SettingsIcon size={18} />
             <span>Settings</span>
           </Link>
+          <Link href="/admin" className={`nav-item ${pathname === "/admin" ? "active" : ""}`}>
+            <Shield size={18} />
+            <span>Admin Panel</span>
+          </Link>
         </nav>
 
         <div className="sidebar-footer">
@@ -278,6 +288,10 @@ export function DashboardLayout({
         <Link href="/settings" className={`mobile-nav-btn ${pathname === "/settings" ? "active" : ""}`}>
           <SettingsIcon size={20} />
           <span>Settings</span>
+        </Link>
+        <Link href="/admin" className={`mobile-nav-btn ${pathname === "/admin" ? "active" : ""}`}>
+          <Shield size={20} />
+          <span>Admin</span>
         </Link>
       </nav>
 

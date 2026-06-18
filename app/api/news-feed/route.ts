@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { loadSettings } from "@/lib/playlist-server";
 
 export const dynamic = "force-dynamic";
 
@@ -83,10 +84,15 @@ function getCategory(title: string) {
 
 export async function GET() {
   try {
+    const settings = await loadSettings();
+    const feedsToFetch = Array.isArray(settings.rssFeeds) && settings.rssFeeds.length > 0
+      ? settings.rssFeeds
+      : FEEDS;
+
     let aggregatedItems: any[] = [];
     
     // Fetch from all RSS feeds concurrently
-    const promises = FEEDS.map(async (feed) => {
+    const promises = feedsToFetch.map(async (feed) => {
       try {
         const res = await fetch(feed.url, {
           headers: { "User-Agent": USER_AGENT },

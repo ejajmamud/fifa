@@ -1,0 +1,17 @@
+{
+  "cacheTtl": 300000,
+  "checkTimeout": 1200,
+  "playlistFile": "Fifa world cup.m3u",
+  "scoreboardUrl": "https://site.api.espn.com/apis/site/v2/sports/soccer/fifa.world/scoreboard?dates=20260601-20260731&limit=200",
+  "epgDurationMinutes": 120,
+  "epgBlocksCount": 12,
+  "priorityRules": [
+    { "name": "DSports", "urlContains": "A008" },
+    { "name": "TyC Sports ARG", "urlContains": "stream/84" }
+  ],
+  "rssFeeds": [
+    { "url": "https://feeds.bbci.co.uk/sport/football/rss.xml", "name": "BBC Sport" },
+    { "url": "https://www.skysports.com/rss/12040", "name": "Sky Sports" },
+    { "url": "https://www.espn.com/espn/rss/soccer/news", "name": "ESPN FC" }
+  ]
+}

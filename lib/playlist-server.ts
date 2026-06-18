@@ -159,7 +159,7 @@ const showCatalogs = {
   ]
 };
 
-function generateEPG(channelName: string, channelId: string): EPGItem[] {
+function generateEPG(channelName: string, channelId: string, durationMinutes = 120, blocksCount = 12): EPGItem[] {
   const rand = seededRandom(channelName + channelId);
   const isSpanish = /tyc|tnt|win|deportes|futbol|claro|multimedios|azteca|telemundo/i.test(channelName);
   const isEnglish = /espn|fox|sky|nbc|bein|dazn|universo/i.test(channelName);
@@ -174,9 +174,9 @@ function generateEPG(channelName: string, channelId: string): EPGItem[] {
   const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0);
   const items: EPGItem[] = [];
 
-  for (let block = 0; block < 12; block++) {
-    const startTime = new Date(startOfDay.getTime() + block * 2 * 60 * 60 * 1000);
-    const endTime = new Date(startTime.getTime() + 2 * 60 * 60 * 1000);
+  for (let block = 0; block < blocksCount; block++) {
+    const startTime = new Date(startOfDay.getTime() + block * durationMinutes * 60 * 1000);
+    const endTime = new Date(startTime.getTime() + durationMinutes * 60 * 1000);
     const index = Math.floor(rand() * pool.length);
     const show = pool[index];
 
@@ -186,7 +186,7 @@ function generateEPG(channelName: string, channelId: string): EPGItem[] {
       description: show.desc,
       startTime: startTime.toISOString(),
       endTime: endTime.toISOString(),
-      durationMinutes: 120
+      durationMinutes: durationMinutes
     });
   }
 
@@ -198,13 +198,75 @@ let channelsCache: {
   channels: Channel[];
 } | null = null;
 
-const CACHE_TTL = 5 * 60 * 1000; // 5 minutes cache
+let globalCacheTtl = 300000;
 let isRefreshing = false;
 
-function getForcedTopRank(name: string, url: string): number {
+export interface PriorityRule {
+  name: string;
+  urlContains: string;
+}
+
+export interface RssFeedSetting {
+  url: string;
+  name: string;
+}
+
+export interface PlatformSettings {
+  cacheTtl: number;
+  checkTimeout: number;
+  playlistFile: string;
+  scoreboardUrl: string;
+  epgDurationMinutes: number;
+  epgBlocksCount: number;
+  priorityRules: PriorityRule[];
+  rssFeeds: RssFeedSetting[];
+}
+
+export async function loadSettings(): Promise<PlatformSettings> {
+  const defaults: PlatformSettings = {
+    cacheTtl: 300000,
+    checkTimeout: 1200,
+    playlistFile: "Fifa world cup.m3u",
+    scoreboardUrl: "https://site.api.espn.com/apis/site/v2/sports/soccer/fifa.world/scoreboard?dates=20260601-20260731&limit=200",
+    epgDurationMinutes: 120,
+    epgBlocksCount: 12,
+    priorityRules: [
+      { name: "DSports", urlContains: "A008" },
+      { name: "TyC Sports ARG", urlContains: "stream/84" }
+    ],
+    rssFeeds: [
+      { url: "https://feeds.bbci.co.uk/sport/football/rss.xml", name: "BBC Sport" },
+      { url: "https://www.skysports.com/rss/12040", name: "Sky Sports" },
+      { url: "https://www.espn.com/espn/rss/soccer/news", name: "ESPN FC" }
+    ]
+  };
+  try {
+    const settingsPath = path.join(process.cwd(), "settings.json");
+    const content = await fs.readFile(settingsPath, "utf8");
+    const parsed = JSON.parse(content);
+    return {
+      cacheTtl: typeof parsed.cacheTtl === "number" ? parsed.cacheTtl : defaults.cacheTtl,
+      checkTimeout: typeof parsed.checkTimeout === "number" ? parsed.checkTimeout : defaults.checkTimeout,
+      playlistFile: typeof parsed.playlistFile === "string" ? parsed.playlistFile : defaults.playlistFile,
+      scoreboardUrl: typeof parsed.scoreboardUrl === "string" ? parsed.scoreboardUrl : defaults.scoreboardUrl,
+      epgDurationMinutes: typeof parsed.epgDurationMinutes === "number" ? parsed.epgDurationMinutes : defaults.epgDurationMinutes,
+      epgBlocksCount: typeof parsed.epgBlocksCount === "number" ? parsed.epgBlocksCount : defaults.epgBlocksCount,
+      priorityRules: Array.isArray(parsed.priorityRules) ? parsed.priorityRules : defaults.priorityRules,
+      rssFeeds: Array.isArray(parsed.rssFeeds) ? parsed.rssFeeds : defaults.rssFeeds
+    };
+  } catch {
+    return defaults;
+  }
+}
+
+function getForcedTopRank(name: string, url: string, priorityRules: PriorityRule[]): number {
   const n = name.toLowerCase();
-  if (n === "dsports" && url.includes("A008")) return 1;
-  if (n === "tyc sports arg" && url.includes("stream/84")) return 2;
+  for (let i = 0; i < priorityRules.length; i++) {
+    const rule = priorityRules[i];
+    if (n === rule.name.toLowerCase() && url.includes(rule.urlContains)) {
+      return i + 1;
+    }
+  }
   return 999;
 }
 
@@ -212,7 +274,9 @@ async function refreshCacheInBackground() {
   if (isRefreshing) return;
   isRefreshing = true;
   try {
-    const playlistPath = path.join(process.cwd(), PLAYLIST_FILE);
+    const settings = await loadSettings();
+    globalCacheTtl = settings.cacheTtl;
+    const playlistPath = path.join(process.cwd(), settings.playlistFile || PLAYLIST_FILE);
     const playlist = await fs.readFile(playlistPath, "utf8");
     const lines = playlist
       .split(/\r?\n/)
@@ -265,12 +329,12 @@ async function refreshCacheInBackground() {
     }
 
     // Validate all streams in parallel batches
-    const validated = await validateAllStreams(rawChannels);
+    const validated = await validateAllStreams(rawChannels, settings.checkTimeout);
 
     // Sort: forced-top channels first, then working first, then by latency (smaller is better)
     validated.sort((a, b) => {
-      const rankA = getForcedTopRank(a.name, a.url);
-      const rankB = getForcedTopRank(b.name, b.url);
+      const rankA = getForcedTopRank(a.name, a.url, settings.priorityRules);
+      const rankB = getForcedTopRank(b.name, b.url, settings.priorityRules);
       if (rankA !== rankB) return rankA - rankB;
 
       if (a.working && !b.working) return -1;
@@ -282,7 +346,7 @@ async function refreshCacheInBackground() {
     const finalChannels = validated.map((c, idx) => ({
       ...c,
       number: idx + 1,
-      epg: generateEPG(c.name, c.id)
+      epg: generateEPG(c.name, c.id, settings.epgDurationMinutes, settings.epgBlocksCount)
     }));
 
     channelsCache = {
@@ -297,7 +361,7 @@ async function refreshCacheInBackground() {
   }
 }
 
-async function checkStreamStatus(url: string): Promise<{ working: boolean; latency: number }> {
+async function checkStreamStatus(url: string, timeout = 1200): Promise<{ working: boolean; latency: number }> {
   const startTime = Date.now();
   try {
     const res = await fetch(url, {
@@ -305,7 +369,7 @@ async function checkStreamStatus(url: string): Promise<{ working: boolean; laten
       headers: {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko)"
       },
-      signal: AbortSignal.timeout(1200)
+      signal: AbortSignal.timeout(timeout)
     });
     if (res.ok) {
       return { working: true, latency: Date.now() - startTime };
@@ -316,14 +380,14 @@ async function checkStreamStatus(url: string): Promise<{ working: boolean; laten
   }
 }
 
-async function validateAllStreams(rawChannels: Omit<Channel, "epg" | "working" | "latency">[]): Promise<(Omit<Channel, "epg"> & { working: boolean; latency: number })[]> {
+async function validateAllStreams(rawChannels: Omit<Channel, "epg" | "working" | "latency">[], timeout = 1200): Promise<(Omit<Channel, "epg"> & { working: boolean; latency: number })[]> {
   const results: (Omit<Channel, "epg"> & { working: boolean; latency: number })[] = [];
   const batchSize = 25;
   
   for (let i = 0; i < rawChannels.length; i += batchSize) {
     const batch = rawChannels.slice(i, i + batchSize);
     const promises = batch.map(async (c) => {
-      const status = await checkStreamStatus(c.url);
+      const status = await checkStreamStatus(c.url, timeout);
       return {
         ...c,
         working: status.working,
@@ -343,7 +407,8 @@ export async function getPlaylist(): Promise<Channel[]> {
   // If cache is empty, build a fast placeholder playlist immediately and trigger background check
   if (!channelsCache) {
     try {
-      const playlistPath = path.join(process.cwd(), PLAYLIST_FILE);
+      const settings = await loadSettings();
+      const playlistPath = path.join(process.cwd(), settings.playlistFile || PLAYLIST_FILE);
       const playlist = await fs.readFile(playlistPath, "utf8");
       const lines = playlist
         .split(/\r?\n/)
@@ -401,7 +466,7 @@ export async function getPlaylist(): Promise<Channel[]> {
       const initialChannels = rawChannels.map((c, idx) => ({
         ...c,
         number: idx + 1,
-        epg: generateEPG(c.name, c.id)
+        epg: generateEPG(c.name, c.id, settings.epgDurationMinutes, settings.epgBlocksCount)
       }));
 
       channelsCache = {
@@ -418,9 +483,13 @@ export async function getPlaylist(): Promise<Channel[]> {
   }
 
   // If cache is expired, trigger validation check in background (non-blocking)
-  if (now - channelsCache.timestamp > CACHE_TTL) {
+  if (now - channelsCache.timestamp > globalCacheTtl) {
     refreshCacheInBackground();
   }
 
   return channelsCache.channels;
+}
+
+export function clearPlaylistCache() {
+  channelsCache = null;
 }

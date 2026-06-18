@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { loadSettings } from "@/lib/playlist-server";
 
 export const dynamic = "force-dynamic";
 
@@ -75,10 +76,12 @@ function generateScorers(homeTeam: string, awayTeam: string, homeScore: number, 
 export async function GET() {
   try {
     let matches: any[] = [];
+    const settings = await loadSettings();
+    const scoreboardApiUrl = settings.scoreboardUrl || "https://site.api.espn.com/apis/site/v2/sports/soccer/fifa.world/scoreboard?dates=20260601-20260731&limit=200";
     
     // Attempt to fetch from ESPN Live Scoreboard API
     try {
-      const res = await fetch("https://site.api.espn.com/apis/site/v2/sports/soccer/fifa.world/scoreboard?dates=20260601-20260731&limit=200", {
+      const res = await fetch(scoreboardApiUrl, {
         next: { revalidate: 10 } // short cache for high-fidelity updates
       });
       
