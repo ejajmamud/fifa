@@ -44,7 +44,7 @@ export async function verifyToken(token: string | undefined): Promise<boolean> {
       keyData,
       { name: "HMAC", hash: "SHA-256" },
       false,
-      ["verify"]
+      ["sign"]
     );
     
     const signatureBuffer = await crypto.subtle.sign(
@@ -56,7 +56,8 @@ export async function verifyToken(token: string | undefined): Promise<boolean> {
     const expectedSignatureHex = signatureArray.map(b => b.toString(16).padStart(2, '0')).join('');
     
     return signatureHex === expectedSignatureHex;
-  } catch {
+  } catch (err) {
+    console.error("[AUTH] Token verification error:", err);
     return false;
   }
 }

@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useMemo, useState } from "react";
-import { Search, Clock, User, RefreshCw, ChevronRight } from "lucide-react";
+import { Search, Clock, User, RefreshCw, ChevronRight, Sparkles } from "lucide-react";
 import { Channel, NewsArticle, getSportsNews } from "@/lib/playlist";
 import { DashboardLayout } from "@/components/dashboard-layout";
 
@@ -15,6 +15,10 @@ export function NewsClientPage({ channels }: NewsClientPageProps) {
   const [activeCategory, setActiveCategory] = useState("ALL");
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [selectedArticleId, setSelectedArticleId] = useState<string>("");
+
+  // AI Briefing States
+  const [aiBriefing, setAiBriefing] = useState<string | null>(null);
+  const [isFetchingBriefing, setIsFetchingBriefing] = useState(false);
 
   const mockNews = useMemo(() => getSportsNews(), []);
   const news = liveNews.length > 0 ? liveNews : mockNews;
@@ -40,8 +44,25 @@ export function NewsClientPage({ channels }: NewsClientPageProps) {
       });
   };
 
+  const fetchAiBriefing = () => {
+    setIsFetchingBriefing(true);
+    fetch("/api/ai/curate-news")
+      .then((res) => res.json())
+      .then((data) => {
+        setIsFetchingBriefing(false);
+        if (data && data.briefing) {
+          setAiBriefing(data.briefing);
+        }
+      })
+      .catch((err) => {
+        setIsFetchingBriefing(false);
+        console.error("Error fetching AI briefing:", err);
+      });
+  };
+
   useEffect(() => {
     fetchLiveNews();
+    fetchAiBriefing();
     if (news.length > 0) {
       setSelectedArticleId(news[0].id);
     }
@@ -128,6 +149,76 @@ export function NewsClientPage({ channels }: NewsClientPageProps) {
               </button>
             ))}
           </div>
+
+          {/* AI Daily Sports Briefing */}
+          {(aiBriefing || isFetchingBriefing) && (
+            <div style={{
+              background: "rgba(197, 168, 92, 0.02)",
+              border: "1px solid var(--border-accent)",
+              borderRadius: "6px",
+              padding: "20px",
+              display: "flex",
+              flexDirection: "column",
+              gap: "12px",
+              flexShrink: 0,
+              boxShadow: "0 4px 20px rgba(0,0,0,0.25)"
+            }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "0.85rem", color: "var(--accent)", fontWeight: "bold", textTransform: "uppercase", letterSpacing: "0.05em" }}>
+                  <Sparkles size={14} style={{ color: "var(--accent)" }} />
+                  <span>AI Daily Sports Briefing</span>
+                </div>
+                <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
+                  <span style={{ fontSize: "0.65rem", background: "rgba(255,255,255,0.04)", padding: "2px 8px", borderRadius: "3px", color: "var(--text-muted)", border: "1px solid rgba(255,255,255,0.05)" }}>
+                    Llama-3 & Gemini Curation
+                  </span>
+                  <button
+                    onClick={fetchAiBriefing}
+                    disabled={isFetchingBriefing}
+                    style={{
+                      background: "transparent",
+                      border: "none",
+                      color: "var(--accent)",
+                      cursor: "pointer",
+                      display: "flex",
+                      alignItems: "center"
+                    }}
+                    title="Re-curate AI Briefing"
+                  >
+                    <RefreshCw size={12} className={isFetchingBriefing ? "spin-animate" : ""} />
+                  </button>
+                </div>
+              </div>
+
+              {isFetchingBriefing ? (
+                <div style={{ fontSize: "0.8rem", color: "var(--text-muted)", display: "flex", alignItems: "center", gap: "8px", padding: "10px 0" }}>
+                  <RefreshCw size={14} className="spin-animate" />
+                  <span>Synthesizing multi-feed RSS summaries...</span>
+                </div>
+              ) : (
+                <div 
+                  style={{ 
+                    fontSize: "0.88rem", 
+                    color: "var(--text-primary)", 
+                    lineHeight: "1.6", 
+                    display: "flex", 
+                    flexDirection: "column", 
+                    gap: "8px" 
+                  }}
+                >
+                  {aiBriefing?.split("\n").filter(line => line.trim().length > 0).map((line, idx) => {
+                    const cleanLine = line.replace(/^\s*[-*•·▪]\s*/, "");
+                    return (
+                      <div key={idx} style={{ display: "flex", gap: "8px", alignItems: "baseline" }}>
+                        <span style={{ color: "var(--accent)", fontSize: "0.95rem" }}>▪</span>
+                        <span>{cleanLine}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Articles list as Accordion */}
           <div style={{ display: "flex", flexDirection: "column", gap: "14px", overflowY: "auto", flexGrow: 1 }} className="news-scrollable">

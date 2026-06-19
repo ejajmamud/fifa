@@ -218,6 +218,9 @@ export interface PlatformSettings {
   scoreboardUrl: string;
   epgDurationMinutes: number;
   epgBlocksCount: number;
+  groqApiKey: string;
+  openRouterApiKey: string;
+  aiDirectorEnabled: boolean;
   priorityRules: PriorityRule[];
   rssFeeds: RssFeedSetting[];
 }
@@ -230,6 +233,9 @@ export async function loadSettings(): Promise<PlatformSettings> {
     scoreboardUrl: "https://site.api.espn.com/apis/site/v2/sports/soccer/fifa.world/scoreboard?dates=20260601-20260731&limit=200",
     epgDurationMinutes: 120,
     epgBlocksCount: 12,
+    groqApiKey: "",
+    openRouterApiKey: "",
+    aiDirectorEnabled: true,
     priorityRules: [
       { name: "DSports", urlContains: "A008" },
       { name: "TyC Sports ARG", urlContains: "stream/84" }
@@ -251,6 +257,9 @@ export async function loadSettings(): Promise<PlatformSettings> {
       scoreboardUrl: typeof parsed.scoreboardUrl === "string" ? parsed.scoreboardUrl : defaults.scoreboardUrl,
       epgDurationMinutes: typeof parsed.epgDurationMinutes === "number" ? parsed.epgDurationMinutes : defaults.epgDurationMinutes,
       epgBlocksCount: typeof parsed.epgBlocksCount === "number" ? parsed.epgBlocksCount : defaults.epgBlocksCount,
+      groqApiKey: typeof parsed.groqApiKey === "string" ? parsed.groqApiKey : defaults.groqApiKey,
+      openRouterApiKey: typeof parsed.openRouterApiKey === "string" ? parsed.openRouterApiKey : defaults.openRouterApiKey,
+      aiDirectorEnabled: typeof parsed.aiDirectorEnabled === "boolean" ? parsed.aiDirectorEnabled : defaults.aiDirectorEnabled,
       priorityRules: Array.isArray(parsed.priorityRules) ? parsed.priorityRules : defaults.priorityRules,
       rssFeeds: Array.isArray(parsed.rssFeeds) ? parsed.rssFeeds : defaults.rssFeeds
     };

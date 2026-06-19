@@ -268,6 +268,36 @@ export function MatchesClientPage({ channels }: MatchesClientPageProps) {
     });
   }, [selectedMatch]);
 
+  // AI Prediction states & handler
+  const [aiPrediction, setAiPrediction] = useState<{ tactics: string; outlook: string; score: string } | null>(null);
+  const [isGeneratingPrediction, setIsGeneratingPrediction] = useState(false);
+
+  useEffect(() => {
+    setAiPrediction(null);
+  }, [selectedMatchId]);
+
+  const generateAiPrediction = () => {
+    if (!selectedMatch) return;
+    setIsGeneratingPrediction(true);
+    setAiPrediction(null);
+    fetch("/api/ai/analyze-match", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ matchId: selectedMatch.id })
+    })
+      .then(res => res.json())
+      .then(data => {
+        setIsGeneratingPrediction(false);
+        if (data && !data.error) {
+          setAiPrediction(data);
+        }
+      })
+      .catch(err => {
+        setIsGeneratingPrediction(false);
+        console.error("AI Match analysis error:", err);
+      });
+  };
+
   // Filter matches list
   const filteredMatches = useMemo(() => {
     return matches.filter((m) => {
@@ -661,6 +691,59 @@ export function MatchesClientPage({ channels }: MatchesClientPageProps) {
                             </div>
                           )}
                         </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* AI Prediction Card */}
+                  <div style={{ background: "rgba(197, 168, 92, 0.03)", border: "1px solid var(--border-accent)", borderRadius: "4px", padding: "20px", display: "flex", flexDirection: "column", gap: "12px", marginBottom: "5px" }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "0.8rem", color: "var(--accent)", fontWeight: "bold", textTransform: "uppercase" }}>
+                        <Trophy size={14} />
+                        <span>AI Tactical Outlook & Prediction</span>
+                      </div>
+                      <button
+                        onClick={generateAiPrediction}
+                        disabled={isGeneratingPrediction}
+                        style={{
+                          background: "transparent",
+                          border: "1px solid var(--accent)",
+                          color: "var(--accent)",
+                          padding: "4px 10px",
+                          borderRadius: "3px",
+                          fontSize: "0.7rem",
+                          cursor: "pointer",
+                          display: "flex",
+                          alignItems: "center",
+                          gap: "4px"
+                        }}
+                      >
+                        <RefreshCw size={10} className={isGeneratingPrediction ? "spin-animate" : ""} />
+                        <span>{aiPrediction ? "Re-Analyze" : "Analyze Match"}</span>
+                      </button>
+                    </div>
+
+                    {isGeneratingPrediction ? (
+                      <div style={{ fontSize: "0.78rem", color: "var(--text-muted)", display: "flex", alignItems: "center", gap: "8px", padding: "5px 0" }}>
+                        <RefreshCw size={12} className="spin-animate" />
+                        <span>AI is compiling squad shapes and statistics...</span>
+                      </div>
+                    ) : aiPrediction ? (
+                      <div style={{ display: "flex", flexDirection: "column", gap: "10px", fontSize: "0.82rem", lineHeight: "1.45" }}>
+                        <div style={{ borderLeft: "2px solid var(--accent)", paddingLeft: "10px", color: "var(--text-primary)" }}>
+                          <strong>Tactical setups:</strong> {aiPrediction.tactics}
+                        </div>
+                        <div style={{ color: "var(--text-muted)" }}>
+                          <strong>Prediction outcome:</strong> {aiPrediction.outlook}
+                        </div>
+                        <div style={{ display: "flex", justifyContent: "space-between", background: "rgba(0,0,0,0.2)", padding: "8px 12px", borderRadius: "3px", fontSize: "0.78rem", border: "1px solid rgba(255,255,255,0.03)", color: "#fff" }}>
+                          <span>AI Predicted Score:</span>
+                          <span style={{ color: "var(--accent)", fontWeight: "bold" }}>{aiPrediction.score}</span>
+                        </div>
+                      </div>
+                    ) : (
+                      <div style={{ fontSize: "0.78rem", color: "var(--text-muted)" }}>
+                        Click &quot;Analyze Match&quot; to build tactical predictions and expected scores using AI.
                       </div>
                     )}
                   </div>

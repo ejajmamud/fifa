@@ -14,7 +14,8 @@ import {
   Clock,
   Search,
   Send,
-  Activity
+  Activity,
+  Sparkles
 } from "lucide-react";
 import {
   Channel,
@@ -52,6 +53,11 @@ export function TvExperience({ channels }: TvExperienceProps) {
   const [aspectRatio, setAspectRatio] = useState<"fit" | "fill" | "stretch" | "zoom" | "16-9" | "4-3">("fit");
   const [showStatsForNerds, setShowStatsForNerds] = useState(false);
   const [sortingOption, setSortingOption] = useState<"number" | "name" | "latency">("number");
+
+  // AI Director States
+  const [aiDirectorActive, setAiDirectorActive] = useState(false);
+  const [aiNotification, setAiNotification] = useState<string | null>(null);
+  const [aiMatchName, setAiMatchName] = useState<string | null>(null);
 
   // Video Tuner Filters
   const [brightness, setBrightness] = useState(100);
@@ -254,6 +260,61 @@ export function TvExperience({ channels }: TvExperienceProps) {
       }
     }
   }, []);
+
+  // AI Director polling & auto-switch effect
+  useEffect(() => {
+    // Fetch initial status from settings/API
+    fetch("/api/ai/director")
+      .then(res => res.json())
+      .then(data => {
+        if (data.enabled) {
+          setAiDirectorActive(true);
+        }
+      })
+      .catch(() => undefined);
+  }, []);
+
+  useEffect(() => {
+    if (!aiDirectorActive) {
+      setAiMatchName(null);
+      return;
+    }
+
+    const checkRecommendation = () => {
+      fetch("/api/ai/director")
+        .then(res => res.json())
+        .then(data => {
+          if (data.enabled && data.recommendedChannelId) {
+            setAiMatchName(data.activeMatch);
+            
+            // Check if recommendation is different from current channel
+            // Keep using React state reference which is updated dynamically
+            if (data.recommendedChannelId !== activeChannelId) {
+              const matchedChannel = channels.find(c => c.id === data.recommendedChannelId);
+              if (matchedChannel) {
+                setActiveChannelId(data.recommendedChannelId);
+                setAiNotification(`AI Director auto-switched stream to ${matchedChannel.name} for the live match: ${data.activeMatch}!`);
+              }
+            }
+          } else if (data.enabled && !data.recommendedChannelId) {
+            setAiMatchName(data.activeMatch || null);
+          }
+        })
+        .catch(() => undefined);
+    };
+
+    checkRecommendation();
+    const interval = setInterval(checkRecommendation, 30000);
+    return () => clearInterval(interval);
+  }, [aiDirectorActive, activeChannelId, channels]);
+
+  // Dismiss notification toast after delay
+  useEffect(() => {
+    if (aiNotification) {
+      const timer = setTimeout(() => setAiNotification(null), 6000);
+      return () => clearTimeout(timer);
+    }
+  }, [aiNotification]);
 
 
 
@@ -721,6 +782,32 @@ export function TvExperience({ channels }: TvExperienceProps) {
               </div>
             )}
 
+            {/* AI Notification Toast */}
+            {aiNotification && (
+              <div style={{
+                position: "absolute",
+                top: "20px",
+                left: "50%",
+                transform: "translateX(-50%)",
+                background: "rgba(10, 11, 14, 0.95)",
+                border: "2px solid var(--accent)",
+                borderRadius: "4px",
+                padding: "12px 20px",
+                color: "#fff",
+                fontSize: "0.82rem",
+                display: "flex",
+                alignItems: "center",
+                gap: "10px",
+                zIndex: 100,
+                boxShadow: "0 10px 30px rgba(0,0,0,0.5)",
+                borderLeft: "5px solid var(--accent)",
+                maxWidth: "90%"
+              }}>
+                <Sparkles size={16} style={{ color: "var(--accent)", flexShrink: 0 }} />
+                <span>{aiNotification}</span>
+              </div>
+            )}
+
             {/* Stats for nerds */}
             {showStatsForNerds && (
               <div className="stats-for-nerds-panel">
@@ -766,6 +853,12 @@ export function TvExperience({ channels }: TvExperienceProps) {
                   </p>
                 </div>
                 <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
+                  {aiMatchName && (
+                    <span className="chrome-badge" style={{ background: "rgba(197,168,92,0.15)", border: "1px solid var(--accent)", color: "var(--accent)", display: "flex", alignItems: "center", gap: "6px" }}>
+                      <Sparkles size={11} />
+                      AI Tracking: {aiMatchName}
+                    </span>
+                  )}
                   <span className="chrome-badge">Live</span>
                 </div>
               </div>
@@ -811,6 +904,28 @@ export function TvExperience({ channels }: TvExperienceProps) {
                 </div>
 
                 <div className="controls-right">
+                  {/* AI Director status/toggle indicator */}
+                  <button
+                    className={`player-hud-btn ${aiDirectorActive ? "active" : ""}`}
+                    onClick={() => setAiDirectorActive(p => !p)}
+                    style={{ position: "relative" }}
+                    title="Toggle AI Director Auto-Switch"
+                  >
+                    <Sparkles size={18} style={{ color: aiDirectorActive ? "var(--accent)" : "inherit" }} />
+                    <span style={{
+                      position: "absolute",
+                      bottom: "2px",
+                      right: "2px",
+                      fontSize: "0.55rem",
+                      background: aiDirectorActive ? "#22c55e" : "#ef4444",
+                      color: "#fff",
+                      borderRadius: "50%",
+                      width: "8px",
+                      height: "8px",
+                      border: "1px solid #000"
+                    }} />
+                  </button>
+
                   {/* Tuner trigger */}
                   <button
                     className={`player-hud-btn ${showTuner ? "active" : ""}`}

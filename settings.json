@@ -5,6 +5,9 @@
   "scoreboardUrl": "https://site.api.espn.com/apis/site/v2/sports/soccer/fifa.world/scoreboard?dates=20260601-20260731&limit=200",
   "epgDurationMinutes": 120,
   "epgBlocksCount": 12,
+  "groqApiKey": "",
+  "openRouterApiKey": "",
+  "aiDirectorEnabled": true,
   "priorityRules": [
     { "name": "DSports", "urlContains": "A008" },
     { "name": "TyC Sports ARG", "urlContains": "stream/84" }

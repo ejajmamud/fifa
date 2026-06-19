@@ -13,10 +13,10 @@ export async function POST(request: Request) {
       const response = NextResponse.json({ success: true });
       response.cookies.set("admin_session", token, {
         httpOnly: true,
-        secure: true, // enforce secure HTTPS transmission always
-        sameSite: "strict",
+        secure: process.env.NODE_ENV === "production" || request.headers.get("x-forwarded-proto") === "https",
+        sameSite: "lax",
         path: "/",
-        maxAge: 86400 // 1 day session duration
+        maxAge: 86400
       });
       
       return response;

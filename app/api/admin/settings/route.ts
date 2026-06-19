@@ -14,6 +14,9 @@ const defaultSettings = {
   scoreboardUrl: "https://site.api.espn.com/apis/site/v2/sports/soccer/fifa.world/scoreboard?dates=20260601-20260731&limit=200",
   epgDurationMinutes: 120,
   epgBlocksCount: 12,
+  groqApiKey: "",
+  openRouterApiKey: "",
+  aiDirectorEnabled: true,
   priorityRules: [
     { name: "DSports", urlContains: "A008" },
     { name: "TyC Sports ARG", urlContains: "stream/84" }
@@ -52,6 +55,9 @@ export async function POST(request: Request) {
     const scoreboardUrl = typeof payload.scoreboardUrl === "string" ? payload.scoreboardUrl : defaultSettings.scoreboardUrl;
     const epgDurationMinutes = typeof payload.epgDurationMinutes === "number" ? payload.epgDurationMinutes : defaultSettings.epgDurationMinutes;
     const epgBlocksCount = typeof payload.epgBlocksCount === "number" ? payload.epgBlocksCount : defaultSettings.epgBlocksCount;
+    const groqApiKey = typeof payload.groqApiKey === "string" ? payload.groqApiKey : defaultSettings.groqApiKey;
+    const openRouterApiKey = typeof payload.openRouterApiKey === "string" ? payload.openRouterApiKey : defaultSettings.openRouterApiKey;
+    const aiDirectorEnabled = typeof payload.aiDirectorEnabled === "boolean" ? payload.aiDirectorEnabled : defaultSettings.aiDirectorEnabled;
     const priorityRules = Array.isArray(payload.priorityRules) ? payload.priorityRules : defaultSettings.priorityRules;
     const rssFeeds = Array.isArray(payload.rssFeeds) ? payload.rssFeeds : defaultSettings.rssFeeds;
 
@@ -62,6 +68,9 @@ export async function POST(request: Request) {
       scoreboardUrl,
       epgDurationMinutes,
       epgBlocksCount,
+      groqApiKey,
+      openRouterApiKey,
+      aiDirectorEnabled,
       priorityRules,
       rssFeeds
     };

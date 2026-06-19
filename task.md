@@ -1,9 +1,13 @@
-- [x] Implement cryptographic token helpers in `lib/auth.ts`
-- [x] Create Next.js edge routing middleware in `middleware.ts`
-- [x] Create `/api/admin/login` route for session start
-- [x] Create `/api/admin/logout` route for session termination
-- [x] Create `/login` route files (`app/login/page.tsx` and `app/login/login-client.tsx`)
-- [x] Add logout button and handler in `app/admin/admin-client.tsx`
-- [x] Run verification build `npm run build`
-- [x] Git commit and push changes
-- [x] Trigger VPS deployment and verify the live website login flow
+- [ ] Fix admin login cookie options (secure parameter and same-site lax configuration)
+- [ ] Update `settings.json` to include `groqApiKey` and `aiDirectorEnabled`
+- [ ] Update settings interfaces and loaders in `lib/playlist-server.ts` to support Groq configuration
+- [ ] Expose Groq API Key settings input in `/admin` settings tab panel
+- [ ] Create `/api/ai/director` route for AI-driven channel recommendations
+- [ ] Create `/api/ai/analyze-match` route for Groq match predictions and scouting reports
+- [ ] Create `/api/ai/curate-news` route for Groq news aggregation summaries
+- [ ] Modify `components/tv-experience.tsx` to add "AI Director Auto-Switch" toggle button and active channel auto-redirect
+- [ ] Modify `app/matches/matches-client.tsx` to add tactical prediction modal popups
+- [ ] Modify `app/news/news-client.tsx` to display the AI Sports Briefing panel
+- [ ] Run verification build `npm run build`
+- [ ] Git commit and push changes to GitHub
+- [ ] Trigger VPS deployment and verify the live website login flow and AI components

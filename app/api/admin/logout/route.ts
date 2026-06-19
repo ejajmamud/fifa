@@ -7,10 +7,10 @@ export async function POST() {
     const response = NextResponse.json({ success: true });
     response.cookies.set("admin_session", "", {
       httpOnly: true,
-      secure: true,
-      sameSite: "strict",
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
       path: "/",
-      maxAge: 0 // clear session immediately by setting maxAge to 0
+      maxAge: 0
     });
     return response;
   } catch (error: any) {

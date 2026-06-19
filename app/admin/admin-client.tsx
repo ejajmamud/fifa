@@ -55,6 +55,9 @@ type PlatformSettings = {
   scoreboardUrl: string;
   epgDurationMinutes: number;
   epgBlocksCount: number;
+  groqApiKey: string;
+  openRouterApiKey: string;
+  aiDirectorEnabled: boolean;
   priorityRules: PriorityRule[];
   rssFeeds: RssFeedSetting[];
 };
@@ -90,6 +93,9 @@ export function AdminClientPage({ initialChannels }: AdminClientPageProps) {
     scoreboardUrl: "https://site.api.espn.com/apis/site/v2/sports/soccer/fifa.world/scoreboard?dates=20260601-20260731&limit=200",
     epgDurationMinutes: 120,
     epgBlocksCount: 12,
+    groqApiKey: "",
+    openRouterApiKey: "",
+    aiDirectorEnabled: true,
     priorityRules: [],
     rssFeeds: []
   });
@@ -1069,6 +1075,46 @@ export function AdminClientPage({ initialChannels }: AdminClientPageProps) {
                   onChange={(e) => setSettings(prev => ({ ...prev, epgBlocksCount: parseInt(e.target.value) }))}
                   style={{ background: "#000", border: "1px solid var(--border-accent)", borderRadius: "3px", color: "#fff", padding: "8px 12px", fontSize: "0.8rem" }}
                 />
+              </div>
+            </div>
+
+            <div style={{ fontSize: "0.85rem", color: "var(--accent)", textTransform: "uppercase", letterSpacing: "0.05em", borderBottom: "1px solid rgba(255, 255, 255, 0.06)", paddingBottom: "10px", marginTop: "10px" }}>AI Integration (OpenRouter & Groq)</div>
+
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "20px" }} className="match-pitch-stats-grid">
+              <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+                <label style={{ fontSize: "0.75rem", color: "var(--text-muted)" }}>OpenRouter API Key (Primary)</label>
+                <input
+                  type="password"
+                  placeholder="sk-or-..."
+                  value={settings.openRouterApiKey || ""}
+                  onChange={(e) => setSettings(prev => ({ ...prev, openRouterApiKey: e.target.value }))}
+                  style={{ background: "#000", border: "1px solid var(--border-accent)", borderRadius: "3px", color: "#fff", padding: "8px 12px", fontSize: "0.8rem" }}
+                />
+              </div>
+
+              <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+                <label style={{ fontSize: "0.75rem", color: "var(--text-muted)" }}>Groq API Key (Fallback)</label>
+                <input
+                  type="password"
+                  placeholder="gsk_..."
+                  value={settings.groqApiKey || ""}
+                  onChange={(e) => setSettings(prev => ({ ...prev, groqApiKey: e.target.value }))}
+                  style={{ background: "#000", border: "1px solid var(--border-accent)", borderRadius: "3px", color: "#fff", padding: "8px 12px", fontSize: "0.8rem" }}
+                />
+              </div>
+            </div>
+
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "20px" }} className="match-pitch-stats-grid">
+              <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+                <label style={{ fontSize: "0.75rem", color: "var(--text-muted)" }}>AI Director Auto-Switch</label>
+                <select
+                  value={settings.aiDirectorEnabled ? "true" : "false"}
+                  onChange={(e) => setSettings(prev => ({ ...prev, aiDirectorEnabled: e.target.value === "true" }))}
+                  style={{ background: "#000", border: "1px solid var(--border-accent)", color: "#fff", padding: "8px 12px", fontSize: "0.8rem", borderRadius: "3px" }}
+                >
+                  <option value="true">Enabled (Auto-switches to live matches)</option>
+                  <option value="false">Disabled (Manual only)</option>
+                </select>
               </div>
             </div>
 
