@@ -427,7 +427,7 @@ export function TvExperience({ channels }: TvExperienceProps) {
         lowLatencyMode: true,
         backBufferLength: 60,
         enableWorker: true,
-        maxBufferLength: bufferDelay
+        maxBufferLength: Math.max(15, bufferDelay)
       });
 
       hlsRef.current = hlsInstance;
@@ -443,8 +443,21 @@ export function TvExperience({ channels }: TvExperienceProps) {
 
       hlsInstance.on(Hls.Events.ERROR, (_, data) => {
         if (data.fatal) {
-          setIsLoading(false);
-          setPlayError("The stream server did not respond. Try another channel.");
+          switch (data.type) {
+            case Hls.ErrorTypes.NETWORK_ERROR:
+              console.log("[HLS] Fatal network error encountered, attempting recovery...");
+              hlsInstance?.startLoad();
+              break;
+            case Hls.ErrorTypes.MEDIA_ERROR:
+              console.log("[HLS] Fatal media error encountered, attempting recovery...");
+              hlsInstance?.recoverMediaError();
+              break;
+            default:
+              console.error("[HLS] Fatal unrecoverable error:", data);
+              setIsLoading(false);
+              setPlayError("The stream server did not respond. Try another channel.");
+              break;
+          }
         }
       });
     } else if (video.canPlayType("application/vnd.apple.mpegurl")) {
@@ -511,7 +524,7 @@ export function TvExperience({ channels }: TvExperienceProps) {
         lowLatencyMode: true,
         backBufferLength: 60,
         enableWorker: true,
-        maxBufferLength: bufferDelay
+        maxBufferLength: Math.max(15, bufferDelay)
       });
 
       hlsRef2.current = hlsInstance;
@@ -520,6 +533,21 @@ export function TvExperience({ channels }: TvExperienceProps) {
 
       hlsInstance.on(Hls.Events.MANIFEST_PARSED, () => {
         video.play().catch(() => undefined);
+      });
+
+      hlsInstance.on(Hls.Events.ERROR, (_, data) => {
+        if (data.fatal) {
+          switch (data.type) {
+            case Hls.ErrorTypes.NETWORK_ERROR:
+              hlsInstance?.startLoad();
+              break;
+            case Hls.ErrorTypes.MEDIA_ERROR:
+              hlsInstance?.recoverMediaError();
+              break;
+            default:
+              break;
+          }
+        }
       });
     } else if (video.canPlayType("application/vnd.apple.mpegurl")) {
       video.src = finalUrl2;

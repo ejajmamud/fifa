@@ -16,7 +16,10 @@ export async function GET(req: NextRequest) {
       "User-Agent": req.headers.get("user-agent") || "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
     };
 
-    const res = await fetch(targetUrl, { headers });
+    const res = await fetch(targetUrl, { 
+      headers,
+      cache: "no-store" 
+    });
     if (!res.ok) {
       return new NextResponse(`Upstream server returned status ${res.status}`, { status: res.status });
     }
@@ -42,6 +45,10 @@ export async function GET(req: NextRequest) {
         if (!trimmed.startsWith("#")) {
           try {
             const resolved = new URL(trimmed, targetUrl).toString();
+            // Optimize: Bypass proxy if segment URL resolves to HTTPS
+            if (resolved.startsWith("https://")) {
+              return resolved;
+            }
             return `/api/proxy-stream?url=${encodeURIComponent(resolved)}`;
           } catch {
             return line;
@@ -53,6 +60,9 @@ export async function GET(req: NextRequest) {
           return trimmed.replace(/URI="([^"]+)"/g, (match, p1) => {
             try {
               const resolved = new URL(p1, targetUrl).toString();
+              if (resolved.startsWith("https://")) {
+                return `URI="${resolved}"`;
+              }
               return `URI="/api/proxy-stream?url=${encodeURIComponent(resolved)}"`;
             } catch {
               return match;
